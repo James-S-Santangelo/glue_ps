@@ -31,19 +31,22 @@ LOG_DIR = config['log_prefix']
 REF_DIR = f"{config['results_prefix']}/ref"
 PROGRAM_RESOURCE_DIR = f"{config['results_prefix']}/program_resources"
 ANGSD_DIR = f"{config['results_prefix']}/angsd"
+OHANA_DIR = f"{config['results_prefix']}/ohana"
 
 wildcard_constraints:
     chrom='|'.join([x for x in CHROMOSOMES]),
     sample='|'.join([x for x in SAMPLES]),
     habitat='urban|rural'
 
-localrules: copy_ref, samtools_index_ref, create_bam_list_allSamples_allSites, create_bam_list_byHabitat_allSites
+localrules: copy_ref, samtools_index_ref, create_bam_list_allSamples_allSites, create_bam_list_byHabitat_allSites, concat_angsd_gl_allSamples, concat_angsd_mafs_allSamples, ohana_done
 
 include: 'rules/common.smk'
 
 rule all:
    input:
-        f'{ANGSD_DIR}/angsd_byHabitat_allSites.done'
+        f'{ANGSD_DIR}/angsd_byHabitat_allSites.done',
+        f'{OHANA_DIR}/ohana.done'
 
 include: 'rules/ref.smk'
 include: 'rules/angsd_byHabitat_allSites.smk'
+include: 'rules/ohana.smk'
