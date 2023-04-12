@@ -1,0 +1,9 @@
+# Inputs
+samples: ../resources/glue_ps_sampleSheet.txt
+chromosomes: ../resources/chromosome_file.txt
+ref: /home/santang3/projects/def-johnso73/data/resources/TrR_v6_dovetail/TrR_v6_haploid_reference.fasta 
+bams: /home/santang3/projects/def-johnso73/data/bam/TrR_v6_dovetail
+
+# Outputs
+results_prefix: /home/santang3/scratch/glue_ps/results
+log_prefix: /home/santang3/scratch/glue_ps/logs
