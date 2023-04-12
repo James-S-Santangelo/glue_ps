@@ -69,8 +69,9 @@ rule angsd_saf_likelihood_byHabitat_allSites:
         time = lambda wildcards, attempt: str(attempt * 3) + ":00:00" 
     shell:
         """
-        NUM_IND=$( wc -l < {input.bams}  );
-        MIN_IND=$(( NUM_IND*50/100  ));
+        NUM_IND=$( wc -l < {input.bams} );
+        MIN_IND=$(( NUM_IND*50/100 ));
+        MAX_DEPTH=$(( NUM_IND*1*2 ));
         angsd -GL 1 \
             -out {params.out} \
             -nThreads {threads} \
@@ -80,6 +81,7 @@ rule angsd_saf_likelihood_byHabitat_allSites:
             -doCounts 1 \
             -setMinDepthInd 1 \
             -minInd $MIN_IND \
+            -setMaxDepth $MAX_DEPTH \
             -minQ 20 \
             -minMapQ 30 \
             -doSaf 1 \
