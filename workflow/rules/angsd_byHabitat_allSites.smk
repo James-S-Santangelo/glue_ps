@@ -63,18 +63,23 @@ rule angsd_saf_likelihood_byHabitat_allSites:
     conda: '../envs/angsd.yaml'
     params:
         out = f'{ANGSD_DIR}/saf/by_city/{{city}}/{{habitat}}/{{chrom}}/{{chrom}}_{{habitat}}_allSites'
-    threads: 8
+    threads: 4
     resources:
-        mem_mb = lambda wildcards, attempt: attempt * 5000,
+        mem_mb = lambda wildcards, attempt: attempt * 10000,
         time = lambda wildcards, attempt: str(attempt * 3) + ":00:00" 
     shell:
         """
+        NUM_IND=$( wc -l < {input.bams}  );
+        MIN_IND=$(( NUM_IND*50/100  ));
         angsd -GL 1 \
             -out {params.out} \
             -nThreads {threads} \
             -doMajorMinor 4 \
             -baq 2 \
             -ref {input.ref} \
+            -doCounts 1 \
+            -setMinDepthInd 1 \
+            -minInd $MIN_IND \
             -minQ 20 \
             -minMapQ 30 \
             -doSaf 1 \
