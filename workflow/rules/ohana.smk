@@ -34,13 +34,13 @@ rule gls_allSamples:
         gls = temp(f'{ANGSD_DIR}/gls/allSamples/{{chrom}}/{{chrom}}_allSamples.beagle.gz'),
         mafs = temp(f'{ANGSD_DIR}/gls/allSamples/{{chrom}}/{{chrom}}_allSamples.mafs.gz')
     log: f"{LOG_DIR}/angsd_gl_allSamples/{{chrom}}_angsd_gl.log"
-    conda: '../envs/angsd.yaml'
+    container: 'library://james-s-santangelo/angsd/angsd:0.938'
     params:
         out = f'{ANGSD_DIR}/gls/allSamples/{{chrom}}/{{chrom}}_allSamples'
-    threads: 12
+    threads: 8
     resources:
-        mem_mb = lambda wildcards, attempt: attempt * 30000,
-        time = '12:00:00'
+        mem_mb = lambda wildcards, attempt: attempt * 80000,
+        time = '24:00:00'
     shell:
         """
         NUM_IND=$( wc -l < {input.bams} );
@@ -74,7 +74,10 @@ rule concat_angsd_gl_allSamples:
     output:
         f'{ANGSD_DIR}/gls/allSamples/allChroms_allSamples.beagle.gz'
     log: f'{LOG_DIR}/concat_angsd_gl/allSamples_concat.log'
-    conda: '../envs/angsd.yaml'
+    conda: '../envs/ref.yaml'
+    resources:
+        time = '03:00:00',
+        mem_mb = 4000
     shell:
         """
         first=1
@@ -97,7 +100,7 @@ rule concat_angsd_mafs_allSamples:
     output:
         f'{ANGSD_DIR}/gls/allSamples/allChroms_allSamples.mafs.gz'
     log: f'{LOG_DIR}/concat_angsd_mafs/allSamples_concat.log'
-    conda: '../envs/angsd.yaml'
+    conda: '../envs/ref.yaml'
     shell:
         """
         first=1
@@ -122,14 +125,14 @@ rule gls_byCity:
         gls = f'{ANGSD_DIR}/gls/by_city/{{city}}/{{city}}.beagle.gz',
         mafs = f'{ANGSD_DIR}/gls/by_city/{{city}}/{{city}}.mafs.gz'
     log: f'{LOG_DIR}/angsd_gl_byCity_beagle/{{city}}_beagleGL.log'
-    conda: '../envs/angsd.yaml'
+    container: 'library://james-s-santangelo/angsd/angsd:0.938'
     params:
         out = f'{ANGSD_DIR}/gls/by_city/{{city}}/{{city}}',
         chroms = config['chromosomes']
-    threads: 6
+    threads: 8
     resources:
-        mem_mb = lambda wildcards, attempt: attempt * 5000,
-        time = '08:00:00' 
+        mem_mb = lambda wildcards, attempt: attempt * 12000,
+        time = lambda wildcards, attempt: str(attempt * 24) + ":00:00" 
     shell:
         """
         NUM_IND=$( wc -l < {input.bams} );
