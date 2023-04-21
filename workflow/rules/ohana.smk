@@ -157,12 +157,43 @@ rule gls_byCity:
             -bam {input.bams} 2> {log}
         """
 
+###############
+#### OHANA ####
+###############
+
+rule convert_bglTolgm:
+    input:
+        rules.gls_allSamples.output.gls
+    output:
+        f"{OHANA_DIR}/bgl2lgm/{{chrom}}_allSamples.lgm"
+    log: f"{LOG_DIR}/bgl2lgm/bgl2lgm_{{chrom}}_alLSamples.log"
+    container: 'library://james-s-santangelo/ohana/ohana:latest'
+    shell:
+        """
+        zcat {input} | convert bgl2lgm > {output} 2> {log}
+        """
+
+rule sample_lgm_sites:
+    input:
+        rules.convert_bglTolgm.output
+    output:
+         f"{OHANA_DIR}/lgm_downsampled/{{chrom}}_allSamples.lgm"
+    log: f"{LOG_DIR}/sample_lgm_sites/{{chrom}}_sample-sites.log"
+    container: 'library://james-s-santangelo/ohana/ohana:latest'
+    params:
+        percent = 5
+    shell:
+        """
+        sample-sites.py {input} {params.percent} {output} 2> {log} 
+        """
+
 ##############
 #### POST ####
 ##############
 
 rule ohana_done:
     input:
+        expand(rules.sample_lgm_sites.output, chrom=CHROMOSOMES),
         rules.concat_angsd_gl_allSamples.output,
         rules.concat_angsd_mafs_allSamples.output,
         expand(rules.gls_byCity.output, city=CITIES)
