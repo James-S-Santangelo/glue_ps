@@ -187,13 +187,31 @@ rule sample_lgm_sites:
         sample-sites.py {input} {params.percent} {output} 2> {log} 
         """
 
+rule qpas:
+    input:
+        rules.sample_lgm_sites.output
+    output:
+        qmat = f"{OHANA_DIR}/qpas/k{{k}}/{{chrom}}_k{{k}}_allSamples_Q.matrix",
+        fmat = f"{OHANA_DIR}/qpas/k{{k}}/{{chrom}}_k{{k}}_allSamples_F.matrix"
+    log: f"{LOG_DIR}/qpas/k{{k}}/{{chrom}}_{{k}}_qpas.log"
+    container: 'library://james-s-santangelo/ohana/ohana:latest'
+    shell:
+        """
+        qpas {input} \
+            -e 0.0001 \
+            -k {wildcards.k} \
+            -qo {output.qmat} \
+            -fo {output.fmat} \
+            -mi 2000 &> {log}
+        """
+
 ##############
 #### POST ####
 ##############
 
 rule ohana_done:
     input:
-        expand(rules.sample_lgm_sites.output, chrom=CHROMOSOMES),
+        expand(rules.qpas.output, chrom='Chr01_Occ', k=[x for x in range(2, 63)]),
         rules.concat_angsd_gl_allSamples.output,
         rules.concat_angsd_mafs_allSamples.output,
         expand(rules.gls_byCity.output, city=CITIES)
