@@ -167,13 +167,38 @@ rule qpas:
             -mi 2000 &> {log}
         """
 
+rule nemeco:
+    input:
+        g = rules.sample_lgm_sites.output,
+        f = rules.qpas.output.fmat
+    output:
+        f"{OHANA_DIR}/test/nemeco/k{{k}}/{{chrom}}_k{{k}}_C.matrix"
+    container: 'library://james-s-santangelo/ohana/ohana:latest'
+    log: f"{LOG_DIR}/nemeco/test_{{chrom}}_{{k}}_nemeco.log"
+    shell:
+        """
+        nemeco {input.g} {input.f} -co {output} -mi 5000 &> {log}
+        """
+
+rule covTOnwkSVG:
+    input:
+        rules.nemeco.output
+    output:
+        f"{OHANA_DIR}/test/newick/k{{k}}/{{chrom}}_k{{k}}_nwk.svg"
+    container: 'library://james-s-santangelo/ohana/ohana:latest'
+    log: f"{LOG_DIR}/covTOnwkSVG/{{chrom}}_k{{k}}_covTOnwkSVG.log"
+    shell:
+        """
+        cat {input} | convert cov2nwk | convert nwk2svg > {output} 2> {log}
+        """
+
 ##############
 #### POST ####
 ##############
 
 rule ohana_done:
     input:
-        expand(rules.qpas.output, chrom='Chr01_Occ', k=[x for x in range(2, 10)]),
+        expand(rules.covTOnwkSVG.output, chrom='Chr01_Occ', k=[x for x in range(2, 11)]),
         rules.concat_angsd_gl_allSamples.output,
         rules.concat_angsd_mafs_allSamples.output,
     output:
