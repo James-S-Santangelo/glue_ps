@@ -151,7 +151,7 @@ rule sample_lgm_sites:
 
 rule qpas:
     input:
-        rules.sample_lgm_sites.output
+        rules.convert_bglTolgm.output
     output:
         qmat = f"{OHANA_DIR}/test/qpas/k{{k}}/{{chrom}}_k{{k}}_allSamples_Q.matrix",
         fmat = f"{OHANA_DIR}/test/qpas/k{{k}}/{{chrom}}_k{{k}}_allSamples_F.matrix"
@@ -169,7 +169,7 @@ rule qpas:
 
 rule nemeco:
     input:
-        g = rules.sample_lgm_sites.output,
+        g = rules.convert_bglTolgm.output,
         f = rules.qpas.output.fmat
     output:
         f"{OHANA_DIR}/test/nemeco/k{{k}}/{{chrom}}_k{{k}}_C.matrix"
