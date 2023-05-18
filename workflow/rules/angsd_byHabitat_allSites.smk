@@ -60,10 +60,10 @@ rule angsd_saf_likelihood_byHabitat_allSites:
         saf_idx = f'{ANGSD_DIR}/saf/by_city/{{city}}/{{habitat}}/{{chrom}}/{{chrom}}_{{habitat}}_allSites.saf.idx',
         saf_pos = f'{ANGSD_DIR}/saf/by_city/{{city}}/{{habitat}}/{{chrom}}/{{chrom}}_{{habitat}}_allSites.saf.pos.gz'
     log: LOG_DIR + '/angsd_saf_likelihood_byHabitat_allSites/{city}/{city}_{habitat}_{chrom}_allSites_saf.log'
-    conda: '../envs/angsd.yaml'
+    container: 'library://james-s-santangelo/angsd/angsd:0.938'
     params:
         out = f'{ANGSD_DIR}/saf/by_city/{{city}}/{{habitat}}/{{chrom}}/{{chrom}}_{{habitat}}_allSites'
-    threads: 4
+    threads: 6
     resources:
         mem_mb = lambda wildcards, attempt: attempt * 10000,
         time = lambda wildcards, attempt: str(attempt * 3) + ":00:00" 
@@ -90,52 +90,54 @@ rule angsd_saf_likelihood_byHabitat_allSites:
             -bam {input.bams} 2> {log}
         """
  
-# rule angsd_estimate_joint_habitat_sfs_allSites:
-#     """
-#     Estimated folded, two-dimensional urban-rural SFS for each city using realSFS. Uses all sites4
-#     """
-#     input:
-#         safs = get_habitat_saf_files_allSites
-#     output:
-#         '{0}/sfs/2dsfs/byHabitat/allSites/{{chrom}}/{{chrom}}_allSites_{{hab_comb}}.2dsfs'.format(ANGSD_DIR)
-#     log: LOG_DIR + '/angsd_estimate_habitat_2dsfs_allSites/{chrom}_allSites_{hab_comb}.log'
-#     conda: '../envs/angsd.yaml'
-#     threads: 24
-#     resources:
-#         mem_mb = 10000,
-#         time = lambda wildcards, attempt: str(attempt * 48) + ":00:00"
-#     shell:
-#         """
-#         realSFS {input.safs} \
-#             -maxIter 2000 \
-#             -seed 42 \
-#             -fold 1 \
-#             -P {threads} > {output} 2> {log}
-#         """
-# 
-# rule angsd_estimate_sfs_byHabitat_allSites:
-#     """
-#     Estimate folded SFS separately for each habitat (i.e., 1D SFS) using realSFS. 
-#     """
-#     input:
-#         saf = rules.angsd_saf_likelihood_byHabitat_allSites.output.saf_idx
-#     output:
-#         '{0}/sfs/1dsfs/byHabitat/allSites/{{chrom}}/{{chrom}}_allSites_{{habitat}}.sfs'.format(ANGSD_DIR)
-#     log: LOG_DIR + '/angsd_estimate_sfs_byHabitat_allSites/{chrom}_allSites_{habitat}_sfs.log'
-#     conda: '../envs/angsd.yaml'
-#     threads: 12
-#     resources:
-#         mem_mb = 10000,
-#         time = lambda wildcards, attempt: str(attempt * 4) + ":00:00"
-#     shell:
-#         """
-#         realSFS {input.saf} \
-#             -P {threads} \
-#             -fold 1 \
-#             -maxIter 2000 \
-#             -seed 42 > {output} 2> {log}
-#         """
-# 
+rule angsd_estimate_joint_habitat_sfs_allSites:
+    """
+    Estimated folded, two-dimensional urban-rural SFS for each city using realSFS. Uses all sites4
+    """
+    input:
+        safs = get_habitat_saf_files_allSites
+    output:
+        '{0}/sfs/{{city}}/2dsfs/allSites/{{chrom}}/{{city}}_{{chrom}}_allSites_{{hab_comb}}.2dsfs'.format(ANGSD_DIR)
+    log: LOG_DIR + '/angsd_estimate_habitat_2dsfs_allSites/{city}/{city}_{chrom}_allSites_{hab_comb}.log'
+    container: 'library://james-s-santangelo/angsd/angsd:0.938'
+    threads: 12
+    resources:
+        mem_mb = lambda wildcards, attempt: 3000 if wildcards.city != 'Toronto' else 6000 ,
+        time = lambda wildcards, attempt: str(attempt * 18) + ":00:00" if wildcards.city != 'Toronto' else str(attempt * 24) + ":00:00"
+    shell:
+        """
+        realSFS {input.safs} \
+            -tole 1e-6 \
+            -maxIter 30000 \
+            -seed 42 \
+            -fold 1 \
+            -P {threads} > {output} 2> {log}
+        """
+
+rule angsd_estimate_sfs_byHabitat_allSites:
+    """
+    Estimate folded SFS separately for each habitat (i.e., 1D SFS) using realSFS. 
+    """
+    input:
+        saf = rules.angsd_saf_likelihood_byHabitat_allSites.output.saf_idx
+    output:
+        '{0}/sfs/{{city}}/1dsfs/allSites/{{chrom}}/{{city}}_{{chrom}}_allSites_{{habitat}}.sfs'.format(ANGSD_DIR)
+    log: LOG_DIR + '/angsd_estimate_sfs_byHabitat_allSites/{city}/{city}_{chrom}_allSites_{habitat}_sfs.log'
+    container: 'library://james-s-santangelo/angsd/angsd:0.938'
+    threads: 6
+    resources:
+        mem_mb = lambda wildcards, attempt: 2000 if wildcards.city != 'Toronto' else 3000 ,
+        time = lambda wildcards, attempt: str(attempt * 3) + ":00:00" if wildcards.city != 'Toronto' else str(attempt * 12) + ":00:00"
+    shell:
+        """
+        realSFS {input.saf} \
+            -P {threads} \
+            -tole 1e-6 \
+            -fold 1 \
+            -maxIter 30000 \
+            -seed 42 > {output} 2> {log}
+        """
+
 # ########################
 # #### FST AND THETAS ####
 # ########################
@@ -275,7 +277,8 @@ rule angsd_byHabitat_allSites_done:
     Generate empty flag file signalling successful completion of SFS and summary stat for habitats
     """
     input:
-        expand(rules.angsd_saf_likelihood_byHabitat_allSites.output, city=CITIES, habitat=HABITATS, chrom=CHROMOSOMES) 
+        expand(rules.angsd_estimate_joint_habitat_sfs_allSites.output, city=CITIES, hab_comb=['urban_rural'], chrom=CHROMOSOMES), 
+        expand(rules.angsd_estimate_sfs_byHabitat_allSites.output, city=CITIES, habitat=HABITATS, chrom=CHROMOSOMES) 
     output:
         f'{ANGSD_DIR}/angsd_byHabitat_allSites.done'
     shell:

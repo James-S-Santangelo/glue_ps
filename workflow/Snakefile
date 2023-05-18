@@ -46,9 +46,9 @@ rule all:
    input:
         f'{ANGSD_DIR}/angsd_byHabitat_allSites.done',
         f'{OHANA_DIR}/ohana.done',
-        f'{OHANA_DIR}/test/ohana.done'
+        #f'{OHANA_DIR}/test/ohana.done'
 
 include: 'rules/ref.smk'
 include: 'rules/angsd_byHabitat_allSites.smk'
-#include: 'rules/ohana.smk'
-include: 'rules/ohana_test.smk'
+include: 'rules/ohana.smk'
+#include: 'rules/ohana_test.smk'
