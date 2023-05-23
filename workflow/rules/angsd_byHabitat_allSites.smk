@@ -97,13 +97,13 @@ rule angsd_estimate_joint_habitat_sfs_allSites:
     input:
         safs = get_habitat_saf_files_allSites
     output:
-        '{0}/sfs/{{city}}/2dsfs/allSites/{{chrom}}/{{city}}_{{chrom}}_allSites_{{hab_comb}}.2dsfs'.format(ANGSD_DIR)
+        f'{ANGSD_DIR}/sfs/{{city}}/2dsfs/allSites/{{chrom}}/{{city}}_{{chrom}}_allSites_{{hab_comb}}.2dsfs'
     log: LOG_DIR + '/angsd_estimate_habitat_2dsfs_allSites/{city}/{city}_{chrom}_allSites_{hab_comb}.log'
     container: 'library://james-s-santangelo/angsd/angsd:0.938'
     threads: 12
     resources:
         mem_mb = lambda wildcards, attempt: 3000 if wildcards.city != 'Toronto' else 6000 ,
-        time = lambda wildcards, attempt: str(attempt * 18) + ":00:00" if wildcards.city != 'Toronto' else str(attempt * 24) + ":00:00"
+        time = lambda wildcards, attempt: str(attempt * 6) + ":00:00" if wildcards.city != 'Toronto' else str(attempt * 24) + ":00:00"
     shell:
         """
         realSFS {input.safs} \
@@ -121,7 +121,7 @@ rule angsd_estimate_sfs_byHabitat_allSites:
     input:
         saf = rules.angsd_saf_likelihood_byHabitat_allSites.output.saf_idx
     output:
-        '{0}/sfs/{{city}}/1dsfs/allSites/{{chrom}}/{{city}}_{{chrom}}_allSites_{{habitat}}.sfs'.format(ANGSD_DIR)
+        f'{ANGSD_DIR}/sfs/{{city}}/1dsfs/allSites/{{chrom}}/{{city}}_{{chrom}}_allSites_{{habitat}}.sfs'
     log: LOG_DIR + '/angsd_estimate_sfs_byHabitat_allSites/{city}/{city}_{chrom}_allSites_{habitat}_sfs.log'
     container: 'library://james-s-santangelo/angsd/angsd:0.938'
     threads: 6
@@ -138,135 +138,135 @@ rule angsd_estimate_sfs_byHabitat_allSites:
             -seed 42 > {output} 2> {log}
         """
 
-# ########################
-# #### FST AND THETAS ####
-# ########################
-# 
-# rule angsd_habitat_fst_index_allSites:
-#     """
-#     Estimate per-site alphas (numerator) and betas (denominator) for Fst estimation
-#     """
-#     input: 
-#         saf_idx = get_habitat_saf_files_allSites,
-#         joint_sfs = rules.angsd_estimate_joint_habitat_sfs_allSites.output
-#     output:
-#         fst = '{0}/summary_stats/hudson_fst/byHabitat/allSites/{{chrom}}/{{chrom}}_allSites_{{hab_comb}}.fst.gz'.format(ANGSD_DIR),
-#         idx = '{0}/summary_stats/hudson_fst/byHabitat/allSites/{{chrom}}/{{chrom}}_allSites_{{hab_comb}}.fst.idx'.format(ANGSD_DIR)
-#     log: LOG_DIR + '/angsd_habitat_fst_index_allSites/{chrom}_allSites_{hab_comb}_index.log'
-#     conda: '../envs/angsd.yaml'
-#     threads: 4
-#     resources:
-#         mem_mb = 4000,
-#         time = '02:00:00'
-#     params:
-#         fstout = '{0}/summary_stats/hudson_fst/byHabitat/allSites/{{chrom}}/{{chrom}}_allSites_{{hab_comb}}'.format(ANGSD_DIR)
-#     shell:
-#         """
-#         realSFS fst index {input.saf_idx} \
-#             -sfs {input.joint_sfs} \
-#             -fold 1 \
-#             -P {threads} \
-#             -whichFst 1 \
-#             -fstout {params.fstout} 2> {log}
-#         """
-# 
-# rule angsd_fst_allSites_readable:
-#     """
-#     Create readable Fst files. Required due to format of realSFS fst index output files. 
-#     """
-#     input:
-#         rules.angsd_habitat_fst_index_allSites.output.idx
-#     output:
-#         '{0}/summary_stats/hudson_fst/byHabitat/allSites/{{chrom}}/{{chrom}}_allSites_{{hab_comb}}_readable.fst'.format(ANGSD_DIR)
-#     log: 'logs/angsd_fst_allSites_readable/{chrom}_{hab_comb}_readable_fst.log'
-#     conda: '../envs/angsd.yaml'
-#     shell:
-#         """
-#         realSFS fst print {input} > {output} 2> {log}
-#         """
-# 
-# rule angsd_estimate_thetas_byHabitat_allSites:
-#     """
-#     Generate per-site thetas in each habitat from 1DSFS
-#     """
-#     input:
-#         saf_idx = rules.angsd_saf_likelihood_byHabitat_allSites.output.saf_idx,
-#         sfs = rules.angsd_estimate_sfs_byHabitat_allSites.output
-#     output:
-#         idx = '{0}/summary_stats/thetas/byHabitat/allSites/{{chrom}}/{{chrom}}_allSites_{{habitat}}.thetas.idx'.format(ANGSD_DIR),
-#         thet = '{0}/summary_stats/thetas/byHabitat/allSites/{{chrom}}/{{chrom}}_allSites_{{habitat}}.thetas.gz'.format(ANGSD_DIR)
-#     log: LOG_DIR + '/angsd_estimate_thetas_byHabitat_allSites/{chrom}_allSites_{habitat}_thetas.log'
-#     conda: '../envs/angsd.yaml'
-#     threads: 4
-#     params:
-#         out = '{0}/summary_stats/thetas/byHabitat/allSites/{{chrom}}/{{chrom}}_allSites_{{habitat}}'.format(ANGSD_DIR)
-#     resources:
-#         mem_mb = lambda wildcards, attempt: attempt * 4000,
-#         time = '01:00:00'
-#     shell:
-#         """
-#         realSFS saf2theta {input.saf_idx} \
-#             -P {threads} \
-#             -fold 1 \
-#             -sfs {input.sfs} \
-#             -outname {params.out} 2> {log}
-#         """
-# 
-# rule angsd_thetas_allSites_readable:
-#     """
-#     Create readable Fst files. Required due to format of realSFS fst index output files. 
-#     """
-#     input:
-#         rules.angsd_estimate_thetas_byHabitat_allSites.output.idx
-#     output:
-#         '{0}/summary_stats/thetas/byHabitat/allSites/{{chrom}}/{{chrom}}_allSites_{{habitat}}_readable.thetas'.format(ANGSD_DIR)
-#     log: 'logs/angsd_thetas_allSites_readable/{chrom}_{habitat}_readable_thetas.log'
-#     conda: '../envs/angsd.yaml'
-#     shell:
-#         """
-#         thetaStat print {input} > {output} 2> {log}
-#         """
-# 
-# ###########################
-# #### WINDOWED ANALYSES ####
-# ###########################
-# 
-# rule windowed_theta:
-#     input:
-#         rules.angsd_estimate_thetas_byHabitat_allSites.output.idx
-#     output:
-#         "{0}/summary_stats/thetas/byHabitat/allSites/{{chrom}}/{{chrom}}_allSites_{{habitat}}_windowedThetas.gz.pestPG".format(ANGSD_DIR)
-#     log: LOG_DIR + '/windowed_theta/{chrom}_{habitat}_windowTheta.log'
-#     conda: '../envs/angsd.yaml'
-#     params:
-#         out = "{0}/summary_stats/thetas/byHabitat/allSites/{{chrom}}/{{chrom}}_allSites_{{habitat}}_windowedThetas.gz".format(ANGSD_DIR),
-#         win = 50000,
-#         step = 50000
-#     resources:
-#         mem_mb = lambda wildcards, attempt: attempt * 4000,
-#         time = '01:00:00'
-#     shell:
-#         """
-#         thetaStat do_stat {input} -win {params.win} -step {params.step} -outnames {params.out} 2> {log}
-#         """
-# 
-# rule windowed_fst:
-#     input:
-#         rules.angsd_habitat_fst_index_allSites.output.idx
-#     output:
-#         "{0}/summary_stats/hudson_fst/byHabitat/allSites/{{chrom}}/{{chrom}}_allSites_{{hab_comb}}_windowed.fst".format(ANGSD_DIR)
-#     log: LOG_DIR + '/windowed_fst/{chrom}_{hab_comb}_windowedFst.log'
-#     conda: '../envs/angsd.yaml'
-#     params:
-#         win = 50000,
-#         step = 50000
-#     resources:
-#         mem_mb = lambda wildcards, attempt: attempt * 4000,
-#         time = '01:00:00'
-#     shell:
-#         """
-#         realSFS fst stats2 {input} -win {params.win} -step {params.step} > {output} 2> {log}
-# #         """
+########################
+### FST AND THETAS #####
+########################
+
+rule angsd_habitat_fst_index_allSites:
+    """
+    Estimate per-site alphas (numerator) and betas (denominator) for Fst estimation
+    """
+    input: 
+        saf_idx = get_habitat_saf_files_allSites,
+        joint_sfs = rules.angsd_estimate_joint_habitat_sfs_allSites.output
+    output:
+        fst = f'{ANGSD_DIR}/summary_stats/hudson_fst/allSites/{{city}}/{{chrom}}/{{city}}_{{chrom}}_allSites_{{hab_comb}}.fst.gz',
+        idx = f'{ANGSD_DIR}/summary_stats/hudson_fst/allSites/{{city}}/{{chrom}}/{{city}}_{{chrom}}_allSites_{{hab_comb}}.fst.idx'
+    log: LOG_DIR + '/angsd_habitat_fst_index_allSites/{city}_{chrom}_allSites_{hab_comb}_index.log'
+    container: 'library://james-s-santangelo/angsd/angsd:0.938'
+    threads: 4
+    resources:
+        mem_mb = 4000,
+        time = '02:00:00'
+    params:
+        fstout = f'{ANGSD_DIR}/summary_stats/hudson_fst/allSites/{{city}}/{{chrom}}/{{city}}_{{chrom}}_allSites_{{hab_comb}}'
+    shell:
+        """
+        realSFS fst index {input.saf_idx} \
+            -sfs {input.joint_sfs} \
+            -fold 1 \
+            -P {threads} \
+            -whichFst 1 \
+            -fstout {params.fstout} 2> {log}
+        """
+
+rule angsd_fst_allSites_readable:
+    """
+    Create readable Fst files. Required due to format of realSFS fst index output files. 
+    """
+    input:
+        rules.angsd_habitat_fst_index_allSites.output.idx
+    output:
+        f'{ANGSD_DIR}/summary_stats/hudson_fst/allSites/{{city}}/{{chrom}}/{{city}}_{{chrom}}_allSites_{{hab_comb}}_readable.fst'
+    log: 'logs/angsd_fst_allSites_readable/{city}_{chrom}_{hab_comb}_readable_fst.log'
+    container: 'library://james-s-santangelo/angsd/angsd:0.938'
+    shell:
+        """
+        realSFS fst print {input} > {output} 2> {log}
+        """
+
+rule angsd_estimate_thetas_byHabitat_allSites:
+    """
+    Generate per-site thetas in each habitat from 1DSFS
+    """
+    input:
+        saf_idx = rules.angsd_saf_likelihood_byHabitat_allSites.output.saf_idx,
+        sfs = rules.angsd_estimate_sfs_byHabitat_allSites.output
+    output:
+        idx = f'{ANGSD_DIR}/summary_stats/thetas/allSites/{{city}}/{{chrom}}/{{city}}_{{chrom}}_allSites_{{habitat}}.thetas.idx',
+        thet = f'{ANGSD_DIR}/summary_stats/thetas/allSites/{{city}}/{{chrom}}/{{city}}_{{chrom}}_allSites_{{habitat}}.thetas.gz'
+    log: LOG_DIR + '/angsd_estimate_thetas_byHabitat_allSites/{city}_{chrom}_allSites_{habitat}_thetas.log'
+    container: 'library://james-s-santangelo/angsd/angsd:0.938'
+    threads: 4
+    params:
+        out = f'{ANGSD_DIR}/summary_stats/thetas/allSites/{{city}}/{{chrom}}/{{city}}_{{chrom}}_allSites_{{habitat}}'
+    resources:
+        mem_mb = lambda wildcards, attempt: attempt * 4000,
+        time = '01:00:00'
+    shell:
+        """
+        realSFS saf2theta {input.saf_idx} \
+            -P {threads} \
+            -fold 1 \
+            -sfs {input.sfs} \
+            -outname {params.out} 2> {log}
+        """
+
+rule angsd_thetas_allSites_readable:
+    """
+    Create readable Fst files. Required due to format of realSFS fst index output files. 
+    """
+    input:
+        rules.angsd_estimate_thetas_byHabitat_allSites.output.idx
+    output:
+        f'{ANGSD_DIR}/summary_stats/thetas/allSites/{{city}}/{{chrom}}/{{city}}_{{chrom}}_allSites_{{habitat}}_readable.thetas'
+    log: 'logs/angsd_thetas_allSites_readable/{city}_{chrom}_{habitat}_readable_thetas.log'
+    container: 'library://james-s-santangelo/angsd/angsd:0.938'
+    shell:
+        """
+        thetaStat print {input} > {output} 2> {log}
+        """
+
+###########################
+### WINDOWED ANALYSES #####
+###########################
+
+rule windowed_theta:
+    input:
+        rules.angsd_estimate_thetas_byHabitat_allSites.output.idx
+    output:
+        f"{ANGSD_DIR}/summary_stats/thetas/allSites/{{city}}/{{chrom}}/{{city}}_{{chrom}}_allSites_{{habitat}}_windowedThetas.gz.pestPG"
+    log: LOG_DIR + '/windowed_theta/{city}_{chrom}_{habitat}_windowTheta.log'
+    container: 'library://james-s-santangelo/angsd/angsd:0.938'
+    params:
+        out = f"{ANGSD_DIR}/summary_stats/thetas/allSites/{{city}}/{{chrom}}/{{city}}_{{chrom}}_allSites_{{habitat}}_windowedThetas.gz",
+        win = 10000,
+        step = 10000
+    resources:
+        mem_mb = lambda wildcards, attempt: attempt * 4000,
+        time = '01:00:00'
+    shell:
+        """
+        thetaStat do_stat {input} -win {params.win} -step {params.step} -outnames {params.out} 2> {log}
+        """
+
+rule windowed_fst:
+    input:
+        rules.angsd_habitat_fst_index_allSites.output.idx
+    output:
+        f"{ANGSD_DIR}/summary_stats/hudson_fst/allSites/{{city}}/{{chrom}}/{{city}}_{{chrom}}_allSites_{{hab_comb}}_windowed.fst"
+    log: LOG_DIR + '/windowed_fst/{city}_{chrom}_{hab_comb}_windowedFst.log'
+    container: 'library://james-s-santangelo/angsd/angsd:0.938'
+    params:
+        win = 10000,
+        step = 10000
+    resources:
+        mem_mb = lambda wildcards, attempt: attempt * 4000,
+        time = '01:00:00'
+    shell:
+        """
+        realSFS fst stats2 {input} -win {params.win} -step {params.step} > {output} 2> {log}
+        """
 
 ##############
 #### POST ####
@@ -277,8 +277,8 @@ rule angsd_byHabitat_allSites_done:
     Generate empty flag file signalling successful completion of SFS and summary stat for habitats
     """
     input:
-        expand(rules.angsd_estimate_joint_habitat_sfs_allSites.output, city=CITIES, hab_comb=['urban_rural'], chrom=CHROMOSOMES), 
-        expand(rules.angsd_estimate_sfs_byHabitat_allSites.output, city=CITIES, habitat=HABITATS, chrom=CHROMOSOMES) 
+        expand(rules.windowed_fst.output, city=CITIES, hab_comb=['urban_rural'], chrom=CHROMOSOMES), 
+        expand(rules.windowed_theta.output, city=CITIES, habitat=HABITATS, chrom=CHROMOSOMES) 
     output:
         f'{ANGSD_DIR}/angsd_byHabitat_allSites.done'
     shell:
