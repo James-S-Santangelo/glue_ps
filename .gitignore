@@ -1,2 +1,3 @@
 .snakemake
+all_windowed_fst.csv
 .ipynb_checkpoints/
