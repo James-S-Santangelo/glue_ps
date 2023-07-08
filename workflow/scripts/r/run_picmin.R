@@ -43,7 +43,7 @@ lins_p_n <- as.matrix(all_cities_chr1_wide[rowSums(is.na(all_cities_chr1_wide)) 
 resulting_p <- rep(-1, nrow(lins_p_n))
 resulting_n <- rep(-1, nrow(lins_p_n))
 
-num_reps <- 10 # This is an important parameter - the larger the better, but larger values mean longer run times.
+num_reps <- 1000000 # This is an important parameter - the larger the better, but larger values mean longer run times.
 
 # For each of the lines in the dataframe, perform PicMin
 for (i in seq_len(nrow(lins_p_n))) {
