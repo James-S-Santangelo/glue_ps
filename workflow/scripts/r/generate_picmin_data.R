@@ -47,7 +47,11 @@ missing_data_histogram <- all_cities_chr1_wide %>%
     rowwise() %>%
     mutate(na_count = sum(is.na(c_across(all_of(column_names))))) %>%
     ggplot(aes(x = na_count)) +
-    geom_histogram(bins = 26, color = "black", fill = "white")
+    geom_histogram(bins = 26, color = "black", fill = "white") +
+    ylab("Number of genomic windows") + xlab("Number of cities with missing data") +
+    theme_classic() +
+    theme(axis.title = element_text(size = 14),
+          axis.text = element_text(size = 12))
 
 ggsave(
     filename = snakemake@output[[2]],
