@@ -38,14 +38,23 @@ wildcard_constraints:
     sample='|'.join([x for x in SAMPLES]),
     habitat='urban|rural'
 
-localrules: copy_ref, samtools_index_ref, create_bam_list_allSamples_allSites, create_bam_list_byHabitat_allSites, concat_habitat_bamLists_withinCities, concat_angsd_mafs_allSamples, angsd_byHabitat_allSites_done, ohana_done, create_bam_list_ohana_test
+localrules: copy_ref,
+    samtools_index_ref,
+    create_bam_list_allSamples_allSites,
+    create_bam_list_byHabitat_allSites,
+    concat_habitat_bamLists_withinCities,
+    concat_angsd_mafs_allSamples,
+    angsd_byHabitat_allSites_done,
+    ohana_done,
+    create_bam_list_ohana_test
 
 include: 'rules/common.smk'
 
 rule all:
    input:
         f'{ANGSD_DIR}/angsd_byHabitat_allSites.done',
-        f'{OHANA_DIR}/ohana.done',
+        # f'{OHANA_DIR}/ohana.done',
+        f"{ANALYSIS_DIR}/picmin/picmin.done"
         #f'{OHANA_DIR}/test/ohana.done'
 
 include: 'rules/ref.smk'

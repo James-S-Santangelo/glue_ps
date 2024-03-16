@@ -1,9 +1,9 @@
 # Inputs
 samples: ../resources/glue_ps_sampleSheet.txt
 chromosomes: ../resources/chromosome_file.txt
-ref: /research/projects/trifolium/dovetail/dcg/results/reference_assemblies/haploid_reference/TrR_v6_haploid_reference.fasta 
+ref: /research/references/trifolium/repens/UTM_Trep_v1.0/UTM_Trep_v1.0_haploid_reference_softMasked.fasta
 bams: /node1nfs/archive/projects/GLUE/dnaSeqQC_v2/results/bam 
 
 # Outputs
-results_prefix: /scratch/projects/trifolium/glue/glue_ps/results
-log_prefix: /scratch/projects/trifolium/glue/glue_ps/logs
+results_prefix: /research/projects/trifolium/glue/glue_ps/results
+log_prefix: /research/projects/trifolium/glue/glue_ps/logs
