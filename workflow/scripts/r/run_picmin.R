@@ -14,13 +14,27 @@ library(ggnewscale)
 
 # Analysis here largely follows https://github.com/TBooker/PicMin/blob/main/vignettes/Arabidopsis-vignette.Rmd
 
-all_cities_chr1 <- read_csv(snakemake@input[["fst"]]) %>%
-    mutate(winID = paste0(Chr, ":", WinCenter)) %>%
-    group_by(city) %>%
-    mutate(emp = PicMin:::EmpiricalPs(fst, large_i_small_p = TRUE)) %>%
-    dplyr::select(city, winID, emp)
+if (snakemake@wildcards[["stat"]] == "fst") {
+    all_cities <- read_csv(snakemake@input[["stats"]]) %>%
+        dplyr::select(city, winID, fst) %>%
+        group_by(city) %>%
+        mutate(emp = PicMin:::EmpiricalPs(fst, large_i_small_p = TRUE)) %>%
+        dplyr::select(city, winID, emp)
+} else if (snakemake@wildcards[["stat"]] == "tp") {
+   all_cities <- read_csv(snakemake@input[["stats"]]) %>%
+       dplyr::select(city, winID, delta_tp_ur) %>%
+       group_by(city) %>%
+       mutate(emp = PicMin:::EmpiricalPs(delta_tp_ur, large_i_small_p = TRUE)) %>%
+       dplyr::select(city, winID, emp)
+} else {
+    all_cities <- read_csv(snakemake@input[["stats"]]) %>%
+       dplyr::select(city, winID, delta_td_ur) %>%
+        group_by(city) %>%
+        mutate(emp = PicMin:::EmpiricalPs(delta_td_ur, large_i_small_p = TRUE)) %>%
+        dplyr::select(city, winID, emp)
+}
 
-all_cities_chr1_wide <- all_cities_chr1 %>%
+all_cities_wide <- all_cities %>%
     spread(key = city, value = emp) %>%
     column_to_rownames("winID")
 
@@ -37,7 +51,7 @@ emp_p_null_dat_unscaled <- t(apply(emp_p_null_dat, 1, PicMin:::orderStatsPValues
 null_pmax_cor_unscaled <- cor(emp_p_null_dat_unscaled)
 
 # Select the loci that have data for exactly 7 lineages
-lins_p_n <- as.matrix(all_cities_chr1_wide[rowSums(is.na(all_cities_chr1_wide)) == n_lins - n, ])
+lins_p_n <- as.matrix(all_cities_wide[rowSums(is.na(all_cities_wide)) == n_lins - n, ])
 
 # Make some containers for the PicMin results
 resulting_p <- rep(-1, nrow(lins_p_n))
@@ -91,7 +105,7 @@ axis_set <- picmin_results_mod %>%
 
 outliers <- picmin_results_mod %>%
     filter(-log10(q) >= -log10(0.05))
-write_csv(outliers, snakemake@output[[1]])
+write_csv(outliers, snakemake@output[["df"]])
 
 not_outliers <- picmin_results_mod %>%
     filter(!(-log10(q) >= -log10(0.05)))
@@ -169,7 +183,7 @@ manhat_plot <- not_outliers %>%
     guides(colour = guide_colourbar(title.position = "top", title.hjust = 0.5))
 
 ggsave(
-    filename = snakemake@output[[2]],
+    filename = snakemake@output[["manhat"]],
     plot = manhat_plot,
     device = "pdf",
     width = 20,
@@ -190,7 +204,7 @@ outlier_hist <- ggplot(outliers, aes(x = n_est)) +
           axis.text = element_text(size = 12))
 
 ggsave(
-    filename = snakemake@output[[3]],
+    filename = snakemake@output[["hist"]],
     plot = outlier_hist,
     device = "pdf",
     width = 8,
