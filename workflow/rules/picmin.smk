@@ -28,16 +28,29 @@ rule run_picmin:
         flag = rules.install_picmin_dependencies.output,
         stats = rules.generate_picmin_data.output.stats
     output:
-        df = f"{ANALYSIS_DIR}/picmin/csv/outliers/{{stat}}/outliers_{{stat}}_{{n}}_cities.csv",
+        picmin = f"{ANALYSIS_DIR}/picmin/csv/picmin/{{stat}}/picmin_{{stat}}_{{n}}_cities.csv",
+        outlier = f"{ANALYSIS_DIR}/picmin/csv/outliers/{{stat}}/outliers_{{stat}}_{{n}}_cities.csv",
         manhat = f"{ANALYSIS_DIR}/picmin/figures/manhattan/{{stat}}/picmin_manhattan_plot_{{stat}}_{{n}}_cities.pdf",
         hist = f"{ANALYSIS_DIR}/picmin/figures/outlier_histograms/{{stat}}/outliers_histogram_{{stat}}_{{n}}_cities.pdf"
     conda: '../envs/picmin.yaml'
     script:
         "../scripts/r/run_picmin.R"
 
+rule pool_picmin:
+    input:
+        results = lambda w: expand(rules.run_picmin.output.picmin, stat=w.stat, n=[i for i in range(10, 27)])
+    output:
+        picmin = f"{ANALYSIS_DIR}/picmin/csv/picmin/{{stat}}/picmin_{{stat}}_pooled.csv",
+        outlier = f"{ANALYSIS_DIR}/picmin/csv/outliers/{{stat}}/outliers_{{stat}}_pooled.csv",
+        manhat = f"{ANALYSIS_DIR}/picmin/figures/manhattan/{{stat}}/picmin_manhattan_plot_{{stat}}_pooled.pdf",
+        hist = f"{ANALYSIS_DIR}/picmin/figures/outlier_histograms/{{stat}}/outliers_histogram_{{stat}}_pooled.pdf"
+    conda: '../envs/picmin.yaml'
+    script:
+        "../scripts/r/pool_picmin.R"
+
 rule picmin_done:
     input:
-        expand(rules.run_picmin.output, n=[i for i in range(10, 27)], stat=["fst", "tp", "td"])
+        expand(rules.pool_picmin.output, stat=["fst"])
     output:
         f"{ANALYSIS_DIR}/picmin/picmin.done"
     shell:

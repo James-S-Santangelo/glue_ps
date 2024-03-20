@@ -14,76 +14,8 @@ library(ggnewscale)
 
 # Analysis here largely follows https://github.com/TBooker/PicMin/blob/main/vignettes/Arabidopsis-vignette.Rmd
 
-if (snakemake@wildcards[["stat"]] == "fst") {
-    all_cities <- read_csv(snakemake@input[["stats"]]) %>%
-        dplyr::select(city, winID, fst) %>%
-        group_by(city) %>%
-        mutate(emp = PicMin:::EmpiricalPs(fst, large_i_small_p = TRUE)) %>%
-        dplyr::select(city, winID, emp)
-} else if (snakemake@wildcards[["stat"]] == "tp") {
-   all_cities <- read_csv(snakemake@input[["stats"]]) %>%
-       dplyr::select(city, winID, delta_tp_ur) %>%
-       group_by(city) %>%
-       mutate(emp = PicMin:::EmpiricalPs(delta_tp_ur, large_i_small_p = TRUE)) %>%
-       dplyr::select(city, winID, emp)
-} else {
-    all_cities <- read_csv(snakemake@input[["stats"]]) %>%
-       dplyr::select(city, winID, delta_td_ur) %>%
-        group_by(city) %>%
-        mutate(emp = PicMin:::EmpiricalPs(delta_td_ur, large_i_small_p = TRUE)) %>%
-        dplyr::select(city, winID, emp)
-}
-
-all_cities_wide <- all_cities %>%
-    spread(key = city, value = emp) %>%
-    column_to_rownames("winID")
-
-n_lins <- 26  # Total number of cities
-n <- as.numeric(snakemake@wildcards[["n"]])  # Number of cities with data (i.e., not missing)
-
-# Run 10,000 replicate simulations of this situation and build the correlation matrix for the order statistics from them
-emp_p_null_dat <- t(replicate(40000, PicMin:::GenerateNullData(1.0, n, 0.5, 3, 10000)))
-
-# Calculate the order statistics" p-values for each simulation
-emp_p_null_dat_unscaled <- t(apply(emp_p_null_dat, 1, PicMin:::orderStatsPValues))
-
-# Use those p-values to construct the correlation matrix
-null_pmax_cor_unscaled <- cor(emp_p_null_dat_unscaled)
-
-# Select the loci that have data for exactly 7 lineages
-lins_p_n <- as.matrix(all_cities_wide[rowSums(is.na(all_cities_wide)) == n_lins - n, ])
-
-# Make some containers for the PicMin results
-resulting_p <- rep(-1, nrow(lins_p_n))
-resulting_n <- rep(-1, nrow(lins_p_n))
-
-num_reps <- 1000000 # This is an important parameter - the larger the better, but larger values mean longer run times.
-
-# For each of the lines in the dataframe, perform PicMin
-for (i in seq_len(nrow(lins_p_n))) {
-    test_result <- PicMin:::PicMin(na.omit(lins_p_n[i, ]),
-                                   null_pmax_cor_unscaled,
-                                   numReps = num_reps)
-    # Store the p-value
-    resulting_p[i] <- test_result$p
-    resulting_n[i] <- test_result$config_est
-}
-
-lins_p_n_result <- data.frame(
-    numLin = n,
-    p = resulting_p,
-    q = p.adjust(resulting_p, method = "fdr"),
-    n_est = resulting_n,
-    locus = row.names(lins_p_n)
-)
-
-picmin_results <- cbind(lins_p_n_result,
-                        read.csv(
-                            text = row.names(lins_p_n),
-                            header = FALSE,
-                            sep = ":",
-                            col.names = c("scaffold", "win_center")
-                        ))
+picmin_results <- read_csv(snakemake@input[["results"]])
+picmin_results$pooled_q <- p.adjust(picmin_results$p, method = "fdr")
 write_csv(picmin_results, snakemake@output[["picmin"]])
 
 ################################
@@ -105,11 +37,11 @@ axis_set <- picmin_results_mod %>%
     summarize(center = mean(WinCenter_cum))
 
 outliers <- picmin_results_mod %>%
-    filter(-log10(q) >= -log10(0.05))
+    filter(-log10(pooled_q) >= -log10(0.05))
 write_csv(outliers, snakemake@output[["outlier"]])
 
 not_outliers <- picmin_results_mod %>%
-    filter(!(-log10(q) >= -log10(0.05)))
+    filter(!(-log10(pooled_q) >= -log10(0.05)))
 
 manhat_plot <- not_outliers %>%
     mutate(
@@ -132,7 +64,7 @@ manhat_plot <- not_outliers %>%
             scaffold == "Chr08_Pall" ~ "Two"
         )
     ) %>%
-    ggplot(aes(x = WinCenter_cum, y = -log10(q))) +
+    ggplot(aes(x = WinCenter_cum, y = -log10(pooled_q))) +
     geom_point(
         shape = 21,
         size = 3,
