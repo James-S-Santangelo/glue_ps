@@ -1,5 +1,3 @@
-# Rules to run OHANA for detection of selection
-
 ###############
 #### SETUP ####
 ###############
@@ -157,66 +155,17 @@ rule gls_byCity:
             -bam {input.bams} 2> {log}
         """
 
-###############
-#### OHANA ####
-###############
-
-rule convert_bglTolgm:
-    input:
-        rules.gls_allSamples.output.gls
-    output:
-        f"{OHANA_DIR}/bgl2lgm/{{chrom}}_allSamples.lgm"
-    log: f"{LOG_DIR}/bgl2lgm/bgl2lgm_{{chrom}}_alLSamples.log"
-    container: 'library://james-s-santangelo/ohana/ohana:latest'
-    shell:
-        """
-        zcat {input} | convert bgl2lgm > {output} 2> {log}
-        """
-
-rule sample_lgm_sites:
-    input:
-        rules.convert_bglTolgm.output
-    output:
-         f"{OHANA_DIR}/lgm_downsampled/{{chrom}}_allSamples.lgm"
-    log: f"{LOG_DIR}/sample_lgm_sites/{{chrom}}_sample-sites.log"
-    container: 'library://james-s-santangelo/ohana/ohana:latest'
-    params:
-        percent = 5
-    shell:
-        """
-        sample-sites.py {input} {params.percent} {output} 2> {log} 
-        """
-
-rule qpas:
-    input:
-        rules.sample_lgm_sites.output
-    output:
-        qmat = f"{OHANA_DIR}/qpas/k{{k}}/{{chrom}}_k{{k}}_allSamples_Q.matrix",
-        fmat = f"{OHANA_DIR}/qpas/k{{k}}/{{chrom}}_k{{k}}_allSamples_F.matrix"
-    log: f"{LOG_DIR}/qpas/k{{k}}/{{chrom}}_{{k}}_qpas.log"
-    container: 'library://james-s-santangelo/ohana/ohana:latest'
-    shell:
-        """
-        qpas {input} \
-            -e 0.0001 \
-            -k {wildcards.k} \
-            -qo {output.qmat} \
-            -fo {output.fmat} \
-            -mi 2000 &> {log}
-        """
-
 ##############
 #### POST ####
 ##############
 
-rule ohana_done:
+rule angsd_gl_done:
     input:
-        expand(rules.qpas.output, chrom='Chr01_Occ', k=[x for x in range(2, 63)]),
         rules.concat_angsd_gl_allSamples.output,
         rules.concat_angsd_mafs_allSamples.output,
         expand(rules.gls_byCity.output, city=CITIES)
     output:
-        f'{OHANA_DIR}/ohana.done'
+        f'{ANGSD_DIR}/angsd_gl.done'
     shell:
         """
         touch {output}
