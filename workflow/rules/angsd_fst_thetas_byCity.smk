@@ -272,7 +272,7 @@ rule windowed_fst:
 #### POST ####
 ##############
 
-rule angsd_byHabitat_allSites_done:
+rule angsd_fst_thetas_byCity_done:
     """
     Generate empty flag file signalling successful completion of SFS and summary stat for habitats
     """
@@ -280,7 +280,7 @@ rule angsd_byHabitat_allSites_done:
         expand(rules.windowed_fst.output, city=CITIES, hab_comb=['urban_rural'], chrom=CHROMOSOMES), 
         expand(rules.windowed_theta.output, city=CITIES, habitat=HABITATS, chrom=CHROMOSOMES) 
     output:
-        f'{ANGSD_DIR}/angsd_byHabitat_allSites.done'
+        f'{ANGSD_DIR}/angsd_fsts_thetas_byCity.done'
     shell:
         """
         touch {output}
