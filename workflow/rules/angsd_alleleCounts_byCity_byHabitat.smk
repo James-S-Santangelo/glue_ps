@@ -68,19 +68,58 @@ rule extract_and_index_af_allSamples_sites:
         angsd sites index {output.sites} ) 2> {log}
         """
 
+rule angsd_alleleCounts_byCity_byHabitat:
+    input:
+        bams = rules.create_bam_list_byHabitat_allSites.output,
+        sites = rules.extract_and_index_af_allSamples_sites.output.sites,
+        ref = rules.copy_ref.output,
+        ref_idx = rules.samtools_index_ref.output
+    output:
+        mafs = f'{ANGSD_DIR}/maf/byCity/{{city}}/{{chrom}}/{{city}}_{{habitat}}_{{chrom}}_snps.mafs.gz',
+        pos = f'{ANGSD_DIR}/maf/byCity/{{city}}/{{chrom}}/{{city}}_{{habitat}}_{{chrom}}_snps.pos.gz',
+        counts = f'{ANGSD_DIR}/maf/byCity/{{city}}/{{chrom}}/{{city}}_{{habitat}}_{{chrom}}_snps.counts.gz',
+    log: LOG_DIR + '/angsd_alleleCounts_byCity_byHabitat/{city}/{chrom}_{habitat}_byCity_snps.log'
+    container: 'library://james-s-santangelo/angsd/angsd:0.938'
+    params:
+        out = f'{ANGSD_DIR}/maf/byCity/{{city}}/{{chrom}}/{{city}}_{{habitat}}_{{chrom}}_snps'
+    threads: 6
+    resources:
+        mem_mb = lambda wildcards, attempt: attempt * 10000,
+        time = lambda wildcards, attempt: str(attempt * 3) + ":00:00" 
+    shell:
+        """
+        NUM_IND=$( wc -l < {input.bams} );
+        MIN_IND=$(( NUM_IND*50/100 ));
+        MAX_DEPTH=$(( NUM_IND*1*2 ));
+        angsd -GL 1 \
+            -out {params.out} \
+            -nThreads {threads} \
+            -doMajorMinor 4 \
+            -baq 2 \
+            -ref {input.ref} \
+            -doCounts 1 \
+            -dumpCounts 3 \
+            -doMaf 1 \
+            -minQ 20 \
+            -minMapQ 30 \
+            -sites {input.sites} \
+            -anc {input.ref} \
+            -r {wildcards.chrom} \
+            -bam {input.bams} 2> {log}
+        """
  
 ##############
 #### POST ####
 ##############
 
-rule angsd_alleleCounts_byCity_done:
+rule angsd_alleleCounts_byCity_byHabitat_done:
     """
     Generate empty flag file signalling successful completion of allele counts by city 
     """
     input:
-        expand(rules.extract_and_index_af_allSamples_sites.output, chrom=CHROMOSOMES), 
+        expand(rules.angsd_alleleCounts_byCity_byHabitat.output, city=CITIES, habitat=HABITATS, chrom=CHROMOSOMES), 
     output:
-        f'{ANGSD_DIR}/angsd_alleleCounts_byCity.done'
+        f'{ANGSD_DIR}/angsd_alleleCounts_byCity_byHabitat.done'
     shell:
         """
         touch {output}
