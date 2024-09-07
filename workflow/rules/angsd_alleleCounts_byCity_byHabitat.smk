@@ -84,8 +84,8 @@ rule angsd_alleleCounts_byCity_byHabitat:
         out = f'{ANGSD_DIR}/maf/byCity/{{city}}/{{chrom}}/{{city}}_{{habitat}}_{{chrom}}_snps'
     threads: 6
     resources:
-        mem_mb = lambda wildcards, attempt: attempt * 10000,
-        time = lambda wildcards, attempt: str(attempt * 3) + ":00:00" 
+        mem_mb = lambda wildcards, attempt: attempt * 4000,
+        time = lambda wildcards, attempt: str(attempt * 1) + ":00:00" 
     shell:
         """
         NUM_IND=$( wc -l < {input.bams} );
