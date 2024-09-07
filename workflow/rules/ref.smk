@@ -21,5 +21,6 @@ rule samtools_index_ref:
     log: f"{LOG_DIR}/samtools_index_ref/samtools_index_ref.log"
     shell:
         """
+        sleep 10
         samtools faidx {input} 2> {log}
         """
