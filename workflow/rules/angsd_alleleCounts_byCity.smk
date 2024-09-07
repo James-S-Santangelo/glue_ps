@@ -47,6 +47,27 @@ rule angsd_snp_af_allSamples:
             -r {wildcards.chrom} \
             -bam {input.bams} 2> {log}
         """
+
+############################################
+#### ALLELE COUNTS PER-CITY PER-HABITAT ####
+############################################
+
+rule extract_and_index_af_allSamples_sites:
+    input:
+        rules.angsd_snp_af_allSamples.output
+    output:
+        sites = f'{PROGRAM_RESOURCE_DIR}/angsd_sites/{{chrom}}/{{chrom}}_af_allSamples.sites',
+        binary= f'{PROGRAM_RESOURCE_DIR}/angsd_sites/{{chrom}}/{{chrom}}_af_allSamples.sites.bin',
+        idx = f'{PROGRAM_RESOURCE_DIR}/angsd_sites/{{chrom}}/{{chrom}}_af_allSamples.sites.idx'
+    log: LOG_DIR + '/extract_and_index_af_allSamples_sites/{chrom}_angsd_index.log'
+    container: 'library://james-s-santangelo/angsd/angsd:0.938'
+    shell:
+        """
+        ( zcat {input} | tail -n +2 | cut -f 1,2 > {output.sites} &&
+        sleep 5
+        angsd sites index {output.sites} ) 2> {log}
+        """
+
  
 ##############
 #### POST ####
@@ -57,7 +78,7 @@ rule angsd_alleleCounts_byCity_done:
     Generate empty flag file signalling successful completion of allele counts by city 
     """
     input:
-        expand(rules.angsd_snp_af_allSamples.output, chrom=CHROMOSOMES), 
+        expand(rules.extract_and_index_af_allSamples_sites.output, chrom=CHROMOSOMES), 
     output:
         f'{ANGSD_DIR}/angsd_alleleCounts_byCity.done'
     shell:
