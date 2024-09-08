@@ -2,5 +2,6 @@ channels:
   - conda-forge
   - bioconda
 dependencies:
+  - snakemake-executor-plugin-slurm
   - python=3.12.0
   - snakemake=8.18.2
