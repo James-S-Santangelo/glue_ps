@@ -51,9 +51,9 @@ include: 'rules/common.smk'
 
 rule all:
    input:
-        f'{ANGSD_DIR}/angsd_fst_thetas_byCity.done',
+        # f'{ANGSD_DIR}/angsd_fst_thetas_byCity.done',
         f'{ANGSD_DIR}/angsd_alleleCounts_byCity_byHabitat.done',
-        f"{ANALYSIS_DIR}/picmin/picmin.done"
+        # f"{ANALYSIS_DIR}/picmin/picmin.done"
 
 include: 'rules/ref.smk'
 include: 'rules/angsd_fst_thetas_byCity.smk'

@@ -1,13 +1,14 @@
 __use_yte__: true
 executor: slurm
 default-resources:
-  mem_mb=4000
-  runtime=60
-  account=def-nessrobe
+  - mem_mb=4000
+  - runtime=60
+  - slurm_account="def-nessrobe_cpu"
 latency-wait: 60
-jobs: 300
+jobs: 100
 retries: 0
-max-jobs-per-second: 2
-max-status-checks-per-second: 1
 local-cores: 1
-remote-job-local-storage-prefix: "/home/santang3/scratch/glue_ps"
+singularity-args: "--bind /home"
+# max-jobs-per-second: 1
+max-status-checks-per-second: 2
+scheduler: greedy

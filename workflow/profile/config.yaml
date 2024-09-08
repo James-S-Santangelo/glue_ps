@@ -3,4 +3,3 @@ printshellcmds: True
 keep-going: True
 conda-frontend: mamba
 conda-cleanup-pkgs: cache
-singularity-args: "--bind /home --bind /scratch --bind /projects"
