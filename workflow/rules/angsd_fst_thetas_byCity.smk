@@ -66,7 +66,7 @@ rule angsd_saf_likelihood_byHabitat_allSites:
     threads: 6
     resources:
         mem_mb = lambda wildcards, attempt: attempt * 10000,
-        time = lambda wildcards, attempt: str(attempt * 3) + ":00:00" 
+        runtime = lambda wildcards, attempt: attempt * 180
     shell:
         """
         NUM_IND=$( wc -l < {input.bams} );
@@ -103,7 +103,7 @@ rule angsd_estimate_joint_habitat_sfs_allSites:
     threads: 12
     resources:
         mem_mb = lambda wildcards, attempt: 3000 if wildcards.city != 'Toronto' else 6000 ,
-        time = lambda wildcards, attempt: str(attempt * 6) + ":00:00" if wildcards.city != 'Toronto' else str(attempt * 24) + ":00:00"
+        runtime = lambda wildcards, attempt:  attempt * 360 if wildcards.city != 'Toronto' else attempt * 1440
     shell:
         """
         realSFS {input.safs} \
@@ -127,7 +127,7 @@ rule angsd_estimate_sfs_byHabitat_allSites:
     threads: 6
     resources:
         mem_mb = lambda wildcards, attempt: 2000 if wildcards.city != 'Toronto' else 3000 ,
-        time = lambda wildcards, attempt: str(attempt * 3) + ":00:00" if wildcards.city != 'Toronto' else str(attempt * 12) + ":00:00"
+        runtime = lambda wildcards, attempt:  attempt * 180 if wildcards.city != 'Toronto' else attempt * 720
     shell:
         """
         realSFS {input.saf} \
@@ -157,7 +157,7 @@ rule angsd_habitat_fst_index_allSites:
     threads: 4
     resources:
         mem_mb = 4000,
-        time = '02:00:00'
+        runtime = 120
     params:
         fstout = f'{ANGSD_DIR}/summary_stats/hudson_fst/allSites/{{city}}/{{chrom}}/{{city}}_{{chrom}}_allSites_{{hab_comb}}'
     shell:
@@ -202,7 +202,7 @@ rule angsd_estimate_thetas_byHabitat_allSites:
         out = f'{ANGSD_DIR}/summary_stats/thetas/allSites/{{city}}/{{chrom}}/{{city}}_{{chrom}}_allSites_{{habitat}}'
     resources:
         mem_mb = lambda wildcards, attempt: attempt * 4000,
-        time = '01:00:00'
+        runtime = 60
     shell:
         """
         realSFS saf2theta {input.saf_idx} \
@@ -244,7 +244,7 @@ rule windowed_theta:
         step = 10000
     resources:
         mem_mb = lambda wildcards, attempt: attempt * 4000,
-        time = '01:00:00'
+        runtime = 60
     shell:
         """
         thetaStat do_stat {input} -win {params.win} -step {params.step} -outnames {params.out} 2> {log}
@@ -262,7 +262,7 @@ rule windowed_fst:
         step = 10000
     resources:
         mem_mb = lambda wildcards, attempt: attempt * 4000,
-        time = '01:00:00'
+        runtime = 60
     shell:
         """
         realSFS fst stats2 {input} -win {params.win} -step {params.step} > {output} 2> {log}

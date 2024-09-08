@@ -38,7 +38,7 @@ rule gls_allSamples:
     threads: 8
     resources:
         mem_mb = lambda wildcards, attempt: attempt * 80000,
-        time = '24:00:00'
+        runtime = 1440
     shell:
         """
         NUM_IND=$( wc -l < {input.bams} );
@@ -74,7 +74,7 @@ rule concat_angsd_gl_allSamples:
     log: f'{LOG_DIR}/concat_angsd_gl/allSamples_concat.log'
     conda: '../envs/ref.yaml'
     resources:
-        time = '03:00:00',
+        runtime =  180,
         mem_mb = 4000
     shell:
         """
@@ -130,7 +130,7 @@ rule gls_byCity:
     threads: 8
     resources:
         mem_mb = lambda wildcards, attempt: attempt * 12000,
-        time = lambda wildcards, attempt: str(attempt * 24) + ":00:00" 
+        runtime = lambda wildcards, attempt: attempt * 1440
     shell:
         """
         NUM_IND=$( wc -l < {input.bams} );

@@ -23,7 +23,7 @@ rule angsd_snp_af_allSamples:
     threads: 6
     resources:
         mem_mb = lambda wildcards, attempt: attempt * 10000,
-        time = lambda wildcards, attempt: str(attempt * 3) + ":00:00" 
+        runtime = lambda wildcards, attempt: str(attempt * 3) + ":00:00" 
     shell:
         """
         NUM_IND=$( wc -l < {input.bams} );
@@ -85,7 +85,7 @@ rule angsd_alleleCounts_byCity_byHabitat:
     threads: 6
     resources:
         mem_mb = lambda wildcards, attempt: attempt * 4000,
-        time = lambda wildcards, attempt: str(attempt * 1) + ":00:00" 
+        runtime = lambda wildcards, attempt: str(attempt * 1) + ":00:00" 
     shell:
         """
         NUM_IND=$( wc -l < {input.bams} );
