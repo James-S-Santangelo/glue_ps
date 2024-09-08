@@ -10,3 +10,4 @@ retries: 0
 max-jobs-per-second: 2
 max-status-checks-per-second: 1
 local-cores: 1
+remote-job-local-storage-prefix: "/home/santang3/scratch/glue_ps"
