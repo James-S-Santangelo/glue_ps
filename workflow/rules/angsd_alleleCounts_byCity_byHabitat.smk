@@ -82,7 +82,7 @@ rule angsd_alleleCounts_byCity_byHabitat:
     container: 'library://james-s-santangelo/angsd/angsd:0.938'
     params:
         out = f'{ANGSD_DIR}/maf/byCity/{{city}}/{{chrom}}/{{city}}_{{habitat}}_{{chrom}}_snps'
-    threads: 6
+    threads: 2
     resources:
         mem_mb = lambda wildcards, attempt: attempt * 4000,
         runtime = lambda wildcards, attempt: attempt * 60

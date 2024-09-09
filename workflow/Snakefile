@@ -30,6 +30,7 @@ LOG_DIR = config['log_prefix']
 REF_DIR = f"{config['results_prefix']}/ref"
 PROGRAM_RESOURCE_DIR = f"{config['results_prefix']}/program_resources"
 ANGSD_DIR = f"{config['results_prefix']}/angsd"
+BAYPASS_DIR = f"{config['results_prefix']}/baypass" 
 ANALYSIS_DIR = f"{config['results_prefix']}/analyses"
 
 wildcard_constraints:
@@ -51,12 +52,14 @@ include: 'rules/common.smk'
 
 rule all:
    input:
-        # f'{ANGSD_DIR}/angsd_fst_thetas_byCity.done',
+        f'{ANGSD_DIR}/angsd_fst_thetas_byCity.done',
         f'{ANGSD_DIR}/angsd_alleleCounts_byCity_byHabitat.done',
-        # f"{ANALYSIS_DIR}/picmin/picmin.done"
+        f'{BAYPASS_DIR}/baypass.done',
+        f"{ANALYSIS_DIR}/picmin/picmin.done"
 
 include: 'rules/ref.smk'
 include: 'rules/angsd_fst_thetas_byCity.smk'
 include: 'rules/angsd_alleleCounts_byCity_byHabitat.smk'
+include: 'rules/baypass.smk'
 include: 'rules/picmin.smk'
 # include: 'rules/angsd_gls.smk'
