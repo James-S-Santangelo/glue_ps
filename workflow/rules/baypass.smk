@@ -36,26 +36,44 @@ rule create_baypass_global_input_files:
         paste {input.cont} | tr '\t' ' ' > {output.cont}
         """
 
+rule split_baypass_global_input_files:
+    input:
+        as_geno = rules.create_baypass_global_input_files.output.geno,
+        site_order = rules.create_alleleCount_files_byCity.output.site_order,
+        perCity_geno = expand(f"{PROGRAM_RESOURCE_DIR}/baypass/{{city}}/{{city}}.geno", city=CITIES)
+    output:
+        "test.txt",
+        as_geno = expand(f"{PROGRAM_RESOURCE_DIR}/baypass/split_files/allSamples/splits/allSamples_{{n}}.geno", n=BAYPASS_SPLITS),
+        site_order = expand(f"{PROGRAM_RESOURCE_DIR}/baypass/split_files/allSamples/site_order/site_order_{{n}}.txt", n=BAYPASS_SPLITS),
+        perCity_geno = expand(f"{PROGRAM_RESOURCE_DIR}/baypass/split_files/byCity/{{city}}/{{city}}_{{n}}.geno", city=CITIES, n=BAYPASS_SPLITS)
+    conda: "../envs/baypass.yaml"
+    params:
+        cities = CITIES,
+        splits = BAYPASS_SPLITS
+    notebook:
+        "../notebooks/split_baypass_global_input_files.py.ipynb"
+
+
 #################
 #### BAYPASS ####
 #################
 
 rule baypass_coreModel_allSamples:
     input:
-        geno = rules.create_baypass_global_input_files.output.geno
+        geno = rules.split_baypass_global_input_files.output.as_geno
     output:
-        log = f"{BAYPASS_DIR}/coreModel_allSamples/allSamples_baypass.log",
-        dic = f"{BAYPASS_DIR}/coreModel_allSamples/allSamples_DIC.out",
-        omega_mat = f"{BAYPASS_DIR}/coreModel_allSamples/allSamples_mat_omega.out",
-        beta_sum = f"{BAYPASS_DIR}/coreModel_allSamples/allSamples_summary_beta_params.out",
-        omega_lda = f"{BAYPASS_DIR}/coreModel_allSamples/allSamples_summary_lda_omega.out",
-        pif_sum = f"{BAYPASS_DIR}/coreModel_allSamples/allSamples_summary_pij.out",
-        pi_xtx = f"{BAYPASS_DIR}/coreModel_allSamples/allSamples_summary_pi_xtx.out",
+        log = f"{BAYPASS_DIR}/coreModel_allSamples/{{n}}/allSamples_{{n}}_baypass.log",
+        dic = f"{BAYPASS_DIR}/coreModel_allSamples/{{n}}/allSamples_{{n}}_DIC.out",
+        omega_mat = f"{BAYPASS_DIR}/coreModel_allSamples/{{n}}/allSamples_{{n}}_mat_omega.out",
+        beta_sum = f"{BAYPASS_DIR}/coreModel_allSamples/{{n}}/allSamples_{{n}}_summary_beta_params.out",
+        omega_lda = f"{BAYPASS_DIR}/coreModel_allSamples/{{n}}/allSamples_{{n}}_summary_lda_omega.out",
+        pif_sum = f"{BAYPASS_DIR}/coreModel_allSamples/{{n}}/allSamples_{{n}}_summary_pij.out",
+        pi_xtx = f"{BAYPASS_DIR}/coreModel_allSamples/{{n}}/allSamples_{{n}}_summary_pi_xtx.out",
     log: f"{LOG_DIR}/baypass/coreModel_allSamples.log"
     container: "library://james-s-santangelo/baypass/baypass:2.41"
-    threads: 12
+    threads: 2
     params:
-        out_prefix = f"{BAYPASS_DIR}/coreModel_allSamples/allSamples"
+        out_prefix = f"{BAYPASS_DIR}/coreModel_allSamples/allSamples_{{n}}"
     shell:
         """
         baypass -gfile {input.geno} \
@@ -70,7 +88,7 @@ rule baypass_coreModel_allSamples:
 
 rule baypass_done:
     input:
-        rules.baypass_coreModel_allSamples.output 
+        expand(rules.baypass_coreModel_allSamples.output, n=BAYPASS_SPLITS)
     output:
         f"{BAYPASS_DIR}/baypass.done"
     shell:
