@@ -79,7 +79,7 @@ rule baypass_coreModel_allSamples:
         pi_xtx = f"{BAYPASS_DIR}/coreModel_allSamples/{{n}}/allSamples_{{n}}_summary_pi_xtx.out",
     log: f"{LOG_DIR}/baypass/coreModel_allSamples_{{n}}.log"
     container: "library://james-s-santangelo/baypass/baypass:2.41"
-    threads: 6
+    threads: 8
     params:
         out_prefix = f"{BAYPASS_DIR}/coreModel_allSamples/allSamples_{{n}}"
     shell:
