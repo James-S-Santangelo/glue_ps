@@ -10,9 +10,9 @@ rule create_alleleCount_files_byCity:
         pos = lambda w: expand(rules.angsd_alleleCounts_byCity_byHabitat.output.pos, city=CITIES, chrom=CHROMOSOMES, habitat=HABITATS),
         counts = lambda w: expand(rules.angsd_alleleCounts_byCity_byHabitat.output.counts, city=CITIES, chrom=CHROMOSOMES, habitat=HABITATS),
     output:
-        perCity_geno = expand(f"{PROGRAM_RESOURCE_DIR}/baypass/{{city}}/{{city}}.geno", city=CITIES),
-        perCity_cont = expand(f"{PROGRAM_RESOURCE_DIR}/baypass/{{city}}/{{city}}.cf", city=CITIES),
-        site_order = f"{PROGRAM_RESOURCE_DIR}/baypass/site_order.txt",
+        perCity_geno = expand(f"{PROGRAM_RESOURCE_DIR}/baypass/allSites/{{city}}/{{city}}.geno", city=CITIES),
+        perCity_cont = expand(f"{PROGRAM_RESOURCE_DIR}/baypass/allSites/{{city}}/{{city}}.cf", city=CITIES),
+        site_order = f"{PROGRAM_RESOURCE_DIR}/baypass/allSites/site_order.txt",
         miss = f"{PROGRAM_RESOURCE_DIR}/baypass/missing.sites"
     conda: "../envs/baypass.yaml"
     params:
@@ -20,7 +20,7 @@ rule create_alleleCount_files_byCity:
         habitats = HABITATS,
         chrom = CHROMOSOMES
     notebook:
-        "../notebooks/create_baypass_input_files.py.ipynb"
+        "../notebooks/create_alleleCount_files_byCity.py.ipynb"
 
 
 rule create_baypass_global_input_files:
@@ -28,8 +28,8 @@ rule create_baypass_global_input_files:
         geno = expand(rules.create_alleleCount_files_byCity.output.perCity_geno, city=CITIES),
         cont = expand(rules.create_alleleCount_files_byCity.output.perCity_cont, city=CITIES)
     output:
-        geno = f"{PROGRAM_RESOURCE_DIR}/baypass/allSamples.geno",
-        cont = f"{PROGRAM_RESOURCE_DIR}/baypass/allSamples.cont",
+        geno = f"{PROGRAM_RESOURCE_DIR}/baypass/allSites/allSamples.geno",
+        cont = f"{PROGRAM_RESOURCE_DIR}/baypass/allSites/allSamples.cont",
     shell:
         """
         paste {input.geno} | tr '\t' ' ' > {output.geno}
@@ -40,9 +40,8 @@ rule split_baypass_global_input_files:
     input:
         as_geno = rules.create_baypass_global_input_files.output.geno,
         site_order = rules.create_alleleCount_files_byCity.output.site_order,
-        perCity_geno = expand(f"{PROGRAM_RESOURCE_DIR}/baypass/{{city}}/{{city}}.geno", city=CITIES)
+        perCity_geno = expand(rules.create_alleleCount_files_byCity.output.perCity_geno, city=CITIES)
     output:
-        "test.txt",
         as_geno = expand(f"{PROGRAM_RESOURCE_DIR}/baypass/split_files/allSamples/splits/allSamples_{{n}}.geno", n=BAYPASS_SPLITS),
         site_order = expand(f"{PROGRAM_RESOURCE_DIR}/baypass/split_files/allSamples/site_order/site_order_{{n}}.txt", n=BAYPASS_SPLITS),
         perCity_geno = expand(f"{PROGRAM_RESOURCE_DIR}/baypass/split_files/byCity/{{city}}/{{city}}_{{n}}.geno", city=CITIES, n=BAYPASS_SPLITS)
@@ -53,14 +52,23 @@ rule split_baypass_global_input_files:
     notebook:
         "../notebooks/split_baypass_global_input_files.py.ipynb"
 
-
 #################
 #### BAYPASS ####
 #################
 
+def get_baypass_coreModel_input_geno(wildcards):
+    all_geno_files = rules.split_baypass_global_input_files.output.as_geno
+    geno = []
+    for geno_file in all_geno_files:
+        base = os.path.basename(geno_file)
+        n = base.split(".")[0].split("_")[1]
+        if n == wildcards.n:
+            geno.append(geno_file)
+    return geno
+
 rule baypass_coreModel_allSamples:
     input:
-        geno = rules.split_baypass_global_input_files.output.as_geno
+        geno = get_baypass_coreModel_input_geno
     output:
         log = f"{BAYPASS_DIR}/coreModel_allSamples/{{n}}/allSamples_{{n}}_baypass.log",
         dic = f"{BAYPASS_DIR}/coreModel_allSamples/{{n}}/allSamples_{{n}}_DIC.out",
@@ -69,9 +77,9 @@ rule baypass_coreModel_allSamples:
         omega_lda = f"{BAYPASS_DIR}/coreModel_allSamples/{{n}}/allSamples_{{n}}_summary_lda_omega.out",
         pif_sum = f"{BAYPASS_DIR}/coreModel_allSamples/{{n}}/allSamples_{{n}}_summary_pij.out",
         pi_xtx = f"{BAYPASS_DIR}/coreModel_allSamples/{{n}}/allSamples_{{n}}_summary_pi_xtx.out",
-    log: f"{LOG_DIR}/baypass/coreModel_allSamples.log"
+    log: f"{LOG_DIR}/baypass/coreModel_allSamples_{{n}}.log"
     container: "library://james-s-santangelo/baypass/baypass:2.41"
-    threads: 2
+    threads: 6
     params:
         out_prefix = f"{BAYPASS_DIR}/coreModel_allSamples/allSamples_{{n}}"
     shell:
