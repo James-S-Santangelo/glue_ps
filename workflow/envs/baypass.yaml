@@ -3,5 +3,8 @@ channels:
   - bioconda
 dependencies:
   - python
+  - tqdm
+  - r-base
+  - r-tidyverse
+  - r-irkernel
   - jupyter
-  - baypass=2.31
