@@ -15,6 +15,9 @@ rule create_alleleCount_files_byCity:
         site_order = f"{PROGRAM_RESOURCE_DIR}/baypass/allSites/site_order.txt",
         miss = f"{PROGRAM_RESOURCE_DIR}/baypass/missing.sites"
     conda: "../envs/baypass.yaml"
+    resources:
+        mem_mb = lambda wildcards, attempt: attempt * 60000,
+        runtime = lambda wildcards, attempt: attempt * 120
     params:
         cities = CITIES,
         habitats = HABITATS,

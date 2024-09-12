@@ -48,7 +48,8 @@ localrules: copy_ref,
     concat_angsd_mafs_allSamples,
     angsd_byHabitat_allSites_done,
     angsd_alleleCounts_byCity_byHabitat_done,
-    create_bam_list_ohana_test
+    create_baypass_global_input_files,
+    split_baypass_global_input_files
 
 include: 'rules/common.smk'
 
