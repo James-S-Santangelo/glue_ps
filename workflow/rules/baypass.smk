@@ -83,6 +83,9 @@ rule baypass_coreModel_allSamples:
     log: f"{LOG_DIR}/baypass/coreModel_allSamples_{{n}}.log"
     container: "library://james-s-santangelo/baypass/baypass:2.41"
     threads: 8
+    resources:
+        mem_mb = lambda wildcards, attempt: attempt * 4000,
+        runtime = lambda wildcards, attempt: attempt * 720
     params:
         out_prefix = f"{BAYPASS_DIR}/coreModel_allSamples/allSamples_{{n}}"
     shell:
