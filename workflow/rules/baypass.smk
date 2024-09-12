@@ -84,10 +84,10 @@ rule baypass_coreModel_allSamples:
     container: "library://james-s-santangelo/baypass/baypass:2.41"
     threads: 8
     resources:
-        mem_mb = lambda wildcards, attempt: attempt * 4000,
+        mem_mb = lambda wildcards, attempt: attempt * 8000,
         runtime = lambda wildcards, attempt: attempt * 720
     params:
-        out_prefix = f"{BAYPASS_DIR}/coreModel_allSamples/allSamples_{{n}}"
+        out_prefix = f"{BAYPASS_DIR}/coreModel_allSamples/{{n}}/allSamples_{{n}}"
     shell:
         """
         baypass -gfile {input.geno} \
