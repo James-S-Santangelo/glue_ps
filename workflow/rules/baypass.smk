@@ -71,33 +71,37 @@ def get_baypass_coreModel_input_geno(wildcards):
 
 rule baypass_coreModel_allSamples:
     input:
-        geno = get_baypass_coreModel_input_geno
+        geno = get_baypass_coreModel_input_geno,
+        cont = rules.create_baypass_global_input_files.output.cont
     output:
-        log = f"{BAYPASS_DIR}/coreModel_allSamples/{{n}}/allSamples_{{n}}_baypass.log",
-        dic = f"{BAYPASS_DIR}/coreModel_allSamples/{{n}}/allSamples_{{n}}_DIC.out",
-        omega_mat = f"{BAYPASS_DIR}/coreModel_allSamples/{{n}}/allSamples_{{n}}_mat_omega.out",
-        beta_sum = f"{BAYPASS_DIR}/coreModel_allSamples/{{n}}/allSamples_{{n}}_summary_beta_params.out",
-        omega_lda = f"{BAYPASS_DIR}/coreModel_allSamples/{{n}}/allSamples_{{n}}_summary_lda_omega.out",
-        pif_sum = f"{BAYPASS_DIR}/coreModel_allSamples/{{n}}/allSamples_{{n}}_summary_pij.out",
-        pi_xtx = f"{BAYPASS_DIR}/coreModel_allSamples/{{n}}/allSamples_{{n}}_summary_pi_xtx.out",
-    log: f"{LOG_DIR}/baypass/coreModel_allSamples_{{n}}.log"
+        log = f"{BAYPASS_DIR}/coreModel_allSamples/seed{{k}}/split{{n}}/allSamples_seed{{k}}_split{{n}}_baypass.log",
+        dic = f"{BAYPASS_DIR}/coreModel_allSamples/seed{{k}}/split{{n}}/allSamples_seed{{k}}_split{{n}}_DIC.out",
+        omega_mat = f"{BAYPASS_DIR}/coreModel_allSamples/seed{{k}}/split{{n}}/allSamples_seed{{k}}_split{{n}}_mat_omega.out",
+        beta_sum = f"{BAYPASS_DIR}/coreModel_allSamples/seed{{k}}/split{{n}}/allSamples_seed{{k}}_split{{n}}_summary_beta_params.out",
+        omega_lda = f"{BAYPASS_DIR}/coreModel_allSamples/seed{{k}}/split{{n}}/allSamples_seed{{k}}_split{{n}}_summary_lda_omega.out",
+        pif_sum = f"{BAYPASS_DIR}/coreModel_allSamples/seed{{k}}/split{{n}}/allSamples_seed{{k}}_split{{n}}_summary_pij.out",
+        pi_xtx = f"{BAYPASS_DIR}/coreModel_allSamples/seed{{k}}/split{{n}}/allSamples_seed{{k}}_split{{n}}_summary_pi_xtx.out",
+        cont_out = f"{BAYPASS_DIR}/coreModel_allSamples/seed{{k}}/split{{n}}/allSamples_seed{{k}}_split{{n}}_summary_contrast.out",
+    log: f"{LOG_DIR}/baypass/coreModel_allSamples_seed{{k}}_split{{n}}.log"
     container: "library://james-s-santangelo/baypass/baypass:2.41"
     threads: 8
     resources:
         mem_mb = lambda wildcards, attempt: attempt * 8000,
         runtime = lambda wildcards, attempt: attempt * 720
     params:
-        out_prefix = f"{BAYPASS_DIR}/coreModel_allSamples/{{n}}/allSamples_{{n}}"
+        out_prefix = f"{BAYPASS_DIR}/coreModel_allSamples/seed{{k}}/split{{n}}/allSamples_seed{{k}}_split{{n}}"
     shell:
         """
         baypass -gfile {input.geno} \
             -outprefix {params.out_prefix} \
+            -seed {wildcards.k} \
+            -contrastfile {input.cont} \
             -nthreads {threads} 2> {log}
         """
 
 rule compare_omega_matrices:
     input:
-        omega_mat = expand(rules.baypass_coreModel_allSamples.output.omega_mat, n=BAYPASS_SPLITS)
+        omega_mat = expand(rules.baypass_coreModel_allSamples.output.omega_mat, n=BAYPASS_SPLITS, k=[1,2,3])
     output:
         fmd_hist = f"{ANALYSIS_DIR}/baypass/fmd_histogram.pdf"
     conda: "../envs/baypass.yaml"
@@ -110,7 +114,7 @@ rule compare_omega_matrices:
 
 rule baypass_done:
     input:
-        expand(rules.baypass_coreModel_allSamples.output, n=BAYPASS_SPLITS)
+        expand(rules.baypass_coreModel_allSamples.output, n=BAYPASS_SPLITS, k=[1,2,3])
     output:
         f"{BAYPASS_DIR}/baypass.done"
     shell:
