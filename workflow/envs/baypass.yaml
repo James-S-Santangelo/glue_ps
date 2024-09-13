@@ -7,4 +7,6 @@ dependencies:
   - r-base
   - r-tidyverse
   - r-irkernel
+  - r-geigen
+  - r-factoextra
   - jupyter

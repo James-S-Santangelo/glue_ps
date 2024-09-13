@@ -95,6 +95,14 @@ rule baypass_coreModel_allSamples:
             -nthreads {threads} 2> {log}
         """
 
+rule compare_omega_matrices:
+    input:
+        omega_mat = expand(rules.baypass_coreModel_allSamples.output.omega_mat, n=BAYPASS_SPLITS)
+    output:
+        fmd_hist = f"{ANALYSIS_DIR}/baypass/fmd_histogram.pdf"
+    conda: "../envs/baypass.yaml"
+    notebook:
+        "../notebook/compare_omega_matrices.r.ipynb"
 
 ##############
 #### POST ####
