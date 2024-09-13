@@ -82,7 +82,7 @@ rule baypass_coreModel_allSamples:
         pif_sum = f"{BAYPASS_DIR}/coreModel_allSamples/seed{{k}}/split{{n}}/allSamples_seed{{k}}_split{{n}}_summary_pij.out",
         pi_xtx = f"{BAYPASS_DIR}/coreModel_allSamples/seed{{k}}/split{{n}}/allSamples_seed{{k}}_split{{n}}_summary_pi_xtx.out",
         cont_out = f"{BAYPASS_DIR}/coreModel_allSamples/seed{{k}}/split{{n}}/allSamples_seed{{k}}_split{{n}}_summary_contrast.out",
-    log: f"{LOG_DIR}/baypass/coreModel_allSamples_seed{{k}}_split{{n}}.log"
+    log: f"{LOG_DIR}/baypass/coreModel_allSamples/seed{{k}}/seed{{k}}_split{{n}}.log"
     container: "library://james-s-santangelo/baypass/baypass:2.41"
     threads: 8
     resources:
