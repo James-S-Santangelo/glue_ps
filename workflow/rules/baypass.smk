@@ -103,7 +103,8 @@ rule compare_omega_matrices:
     input:
         omega_mat = expand(rules.baypass_coreModel_allSamples.output.omega_mat, n=BAYPASS_SPLITS, k=[1,2,3])
     output:
-        fmd_hist = f"{ANALYSIS_DIR}/baypass/fmd_histogram.pdf"
+        "test.txt",
+        fmd_box = f"{ANALYSIS_DIR}/baypass/fmd_boxplot.pdf"
     conda: "../envs/baypass.yaml"
     notebook:
         "../notebook/compare_omega_matrices.r.ipynb"
