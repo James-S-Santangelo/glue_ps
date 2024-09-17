@@ -99,7 +99,7 @@ rule baypass_coreModel_allSamples:
             -nthreads {threads} 2> {log}
         """
 
-rule compare_omega_matrices:
+rule fmd_and_omega_mat_pca_and_svd:
     input:
         omega_mat = expand(rules.baypass_coreModel_allSamples.output.omega_mat, n=BAYPASS_SPLITS, k=[1,2,3])
     output:
@@ -107,7 +107,7 @@ rule compare_omega_matrices:
         fmd_box = f"{ANALYSIS_DIR}/baypass/fmd_boxplot.pdf"
     conda: "../envs/baypass.yaml"
     notebook:
-        "../notebook/compare_omega_matrices.r.ipynb"
+        "../notebooks/fmd_and_omega_mat_pca_and_svd.r.ipynb"
 
 ##############
 #### POST ####
