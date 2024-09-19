@@ -112,13 +112,30 @@ rule fmd_and_omega_mat_pca:
     notebook:
         "../notebooks/fmd_and_omega_mat_pca.r.ipynb"
 
+rule baypass_outlier_test:
+    input:
+        cont_out = expand(rules.baypass_coreModel_allSamples.output.cont_out, n=BAYPASS_SPLITS, k=[1]),
+        site_order = expand(rules.split_baypass_global_input_files.output.site_order, n=BAYPASS_SPLITS),
+    output:
+        "test.txt",
+        c2_outliers = f"{ANALYSIS_DIR}/baypass/baypass_c2_outliers.txt",
+        c2_pval_hist = f"{ANALYSIS_DIR}/baypass/figures/baypass_c2_pval_hist.pdf",
+        c2_manhat_pdf = f"{ANALYSIS_DIR}/baypass/figures/baypass_c2_manhattan.pdf",
+        c2_manhat_png = f"{ANALYSIS_DIR}/baypass/figures/baypass_c2_manhattan.png"
+    params:
+        qval_cut = 0.05
+    conda: "../envs/baypass.yaml"
+    notebook:
+        "../notebooks/baypass_outlier_test.r.ipynb"
+
 ##############
 #### POST ####
 ##############
 
 rule baypass_done:
     input:
-        rules.fmd_and_omega_mat_pca.output
+        rules.fmd_and_omega_mat_pca.output,
+        rules.baypass_outlier_test.output
     output:
         f"{BAYPASS_DIR}/baypass.done"
     shell:
