@@ -99,6 +99,48 @@ rule baypass_coreModel_allSamples:
             -nthreads {threads} 2> {log}
         """
 
+def get_baypass_coreModel_byCity_input(wildcards):
+    all_geno_files = rules.split_baypass_global_input_files.output.perCity_geno
+    all_cont_files = rules.create_alleleCount_files_byCity.output.perCity_cont
+    geno = []
+    for geno_file in all_geno_files:
+        base = os.path.basename(geno_file)
+        city = re.search("(.*)(?=_\\d+\\.geno)", base).group(1) 
+        n = re.search("(\\d+)(?=\\.geno)", base).group(1)
+        if n == wildcards.n and city == wildcards.city:
+            geno.append(geno_file)
+    cont = [f for f in all_cont_files if wildcards.city in os.path.basename(f)]
+    return {"geno": geno, "cont": cont}
+
+rule baypass_coreModel_byCity:
+    input:
+        unpack(get_baypass_coreModel_byCity_input)
+    output:
+        log = f"{BAYPASS_DIR}/coreModel_byCity/{{city}}/split{{n}}/{{city}}_split{{n}}_baypass.log",
+        dic = f"{BAYPASS_DIR}/coreModel_byCity/{{city}}/split{{n}}/{{city}}_split{{n}}_DIC.out",
+        omega_mat = f"{BAYPASS_DIR}/coreModel_byCity/{{city}}/split{{n}}/{{city}}_split{{n}}_mat_omega.out",
+        beta_sum = f"{BAYPASS_DIR}/coreModel_byCity/{{city}}/split{{n}}/{{city}}_split{{n}}_summary_beta_params.out",
+        omega_lda = f"{BAYPASS_DIR}/coreModel_byCity/{{city}}/split{{n}}/{{city}}_split{{n}}_summary_lda_omega.out",
+        pif_sum = f"{BAYPASS_DIR}/coreModel_byCity/{{city}}/split{{n}}/{{city}}_split{{n}}_summary_pij.out",
+        pi_xtx = f"{BAYPASS_DIR}/coreModel_byCity/{{city}}/split{{n}}/{{city}}_split{{n}}_summary_pi_xtx.out",
+        cont_out = f"{BAYPASS_DIR}/coreModel_byCity/{{city}}/split{{n}}/{{city}}_split{{n}}_summary_contrast.out",
+    log: f"{LOG_DIR}/baypass/coreModel_byCity/{{city}}/{{city}}_split{{n}}.log"
+    container: "library://james-s-santangelo/baypass/baypass:2.41"
+    threads: 4
+    resources:
+        mem_mb = lambda wildcards, attempt: attempt * 2000,
+        runtime = lambda wildcards, attempt: attempt * 180
+    params:
+        out_prefix = f"{BAYPASS_DIR}/coreModel_byCity/{{city}}/split{{n}}/{{city}}_split{{n}}"
+    shell:
+        """
+        baypass -gfile {input.geno} \
+            -outprefix {params.out_prefix} \
+            -seed 1 \
+            -contrastfile {input.cont} \
+            -nthreads {threads} 2> {log}
+        """
+
 rule fmd_and_omega_mat_pca:
     input:
         omega_mat = expand(rules.baypass_coreModel_allSamples.output.omega_mat, n=BAYPASS_SPLITS, k=[1,2,3])
@@ -117,7 +159,6 @@ rule baypass_outlier_test:
         cont_out = expand(rules.baypass_coreModel_allSamples.output.cont_out, n=BAYPASS_SPLITS, k=[1]),
         site_order = expand(rules.split_baypass_global_input_files.output.site_order, n=BAYPASS_SPLITS),
     output:
-        "test.txt",
         c2_outliers = f"{ANALYSIS_DIR}/baypass/baypass_c2_outliers.txt",
         c2_pval_hist = f"{ANALYSIS_DIR}/baypass/figures/baypass_c2_pval_hist.pdf",
         c2_manhat_pdf = f"{ANALYSIS_DIR}/baypass/figures/baypass_c2_manhattan.pdf",
@@ -135,7 +176,8 @@ rule baypass_outlier_test:
 rule baypass_done:
     input:
         rules.fmd_and_omega_mat_pca.output,
-        rules.baypass_outlier_test.output
+        rules.baypass_outlier_test.output,
+        expand(rules.baypass_coreModel_byCity.output, city=CITIES, n=BAYPASS_SPLITS)
     output:
         f"{BAYPASS_DIR}/baypass.done"
     shell:
