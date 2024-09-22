@@ -5,7 +5,7 @@ default-resources:
   - runtime=60
   - slurm_account="def-nessrobe_cpu"
 latency-wait: 60
-jobs: 100
+jobs: 250
 retries: 0
 local-cores: 1
 singularity-args: "--bind /home"
