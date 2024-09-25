@@ -13,10 +13,12 @@ rule generate_picmin_data:
     input:
         flag = rules.install_picmin_dependencies.output,
         fst = expand(rules.windowed_fst.output, city=CITIES, hab_comb=['urban_rural'], chrom=CHROMOSOMES), 
+        c2 = expand(rules.generate_windowed_c2_byCity.output, city=CITIES),
         thetas = expand(rules.windowed_theta.output, city=CITIES, habitat=['urban', 'rural'], chrom=CHROMOSOMES), 
     output:
         stats = f"{ANALYSIS_DIR}/picmin/csv/all_windowed_stats.csv",
         hist_fst = f"{ANALYSIS_DIR}/picmin/figures/missing_data_histogram_fst.pdf",
+        hist_c2 = f"{ANALYSIS_DIR}/picmin/figures/missing_data_histogram_c2.pdf",
         hist_tp = f"{ANALYSIS_DIR}/picmin/figures/missing_data_histogram_tp.pdf",
         hist_td = f"{ANALYSIS_DIR}/picmin/figures/missing_data_histogram_td.pdf"
     conda: '../envs/picmin.yaml'
