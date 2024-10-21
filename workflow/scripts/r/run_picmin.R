@@ -7,6 +7,7 @@ library(tidyverse)
 library(poolr)
 library(PicMin)
 library(ggnewscale)
+source("./scripts/r/functions_objects.R")
 
 #########################
 #### PICMIN ANALYSIS ####
@@ -22,17 +23,18 @@ if (snakemake@wildcards[["stat"]] == "fst") {
         dplyr::select(city, winID, emp)
 } else if (snakemake@wildcards[["stat"]] == "tp") {
    all_cities <- read_csv(snakemake@input[["stats"]]) %>%
-       dplyr::select(city, winID, delta_tp_ur) %>%
+       dplyr::select(city, winID, abs_delta_tp_ur) %>%
        group_by(city) %>%
-       mutate(emp = PicMin:::EmpiricalPs(delta_tp_ur, large_i_small_p = TRUE)) %>%
+       mutate(emp = PicMin:::EmpiricalPs(abs_delta_tp_ur, large_i_small_p = TRUE)) %>%
        dplyr::select(city, winID, emp)
 } else {
     all_cities <- read_csv(snakemake@input[["stats"]]) %>%
-       dplyr::select(city, winID, delta_td_ur) %>%
+       dplyr::select(city, winID, abs_delta_td_ur) %>%
         group_by(city) %>%
-        mutate(emp = PicMin:::EmpiricalPs(delta_td_ur, large_i_small_p = TRUE)) %>%
+        mutate(emp = PicMin:::EmpiricalPs(abs_delta_td_ur, large_i_small_p = TRUE)) %>%
         dplyr::select(city, winID, emp)
 }
+
 
 all_cities_wide <- all_cities %>%
     spread(key = city, value = emp) %>%
@@ -50,7 +52,7 @@ emp_p_null_dat_unscaled <- t(apply(emp_p_null_dat, 1, PicMin:::orderStatsPValues
 # Use those p-values to construct the correlation matrix
 null_pmax_cor_unscaled <- cor(emp_p_null_dat_unscaled)
 
-# Select the loci that have data for exactly 7 lineages
+# Select the loci that have data for exactly `n_lins` -`n` lineages
 lins_p_n <- as.matrix(all_cities_wide[rowSums(is.na(all_cities_wide)) == n_lins - n, ])
 
 # Make some containers for the PicMin results
@@ -82,8 +84,11 @@ picmin_results <- cbind(lins_p_n_result,
                             text = row.names(lins_p_n),
                             header = FALSE,
                             sep = ":",
-                            col.names = c("scaffold", "win_center")
-                        ))
+                            col.names = c("chrom", "win_center")
+                        )) %>%
+    mutate(is_outlier = ifelse(-log10(q) >= -log10(snakemake@params[["qval_cut"]]), 1, 0)) %>%
+    remap_chr_names()
+
 write_csv(picmin_results, snakemake@output[["picmin"]])
 
 ################################
@@ -91,45 +96,44 @@ write_csv(picmin_results, snakemake@output[["picmin"]])
 ################################
 
 data_cum <- picmin_results %>%
-    group_by(scaffold) %>%
+    group_by(chrom) %>%
     summarise(max_WinCenter = max(win_center)) %>%
     mutate(WinCenter_add = lag(cumsum(max_WinCenter), default = 0)) %>%
-    dplyr::select(scaffold, WinCenter_add)
+    dplyr::select(chrom, WinCenter_add)
 
 picmin_results_mod <- picmin_results %>%
-    inner_join(data_cum, by = "scaffold") %>%
+    inner_join(data_cum, by = "chrom") %>%
     mutate(WinCenter_cum = win_center + WinCenter_add)
 
 axis_set <- picmin_results_mod %>%
-    group_by(scaffold) %>%
+    group_by(chrom) %>%
     summarize(center = mean(WinCenter_cum))
 
 outliers <- picmin_results_mod %>%
-    filter(-log10(q) >= -log10(0.05))
-write_csv(outliers, snakemake@output[["outlier"]])
+    filter(is_outlier == 1)
 
 not_outliers <- picmin_results_mod %>%
-    filter(!(-log10(q) >= -log10(0.05)))
+    filter(is_outlier == 0)
 
 manhat_plot <- not_outliers %>%
     mutate(
         chrom_cat = case_when(
-            scaffold == "Chr01_Occ" ~ "One",
-            scaffold == "Chr01_Pall" ~ "Two",
-            scaffold == "Chr02_Occ" ~ "One",
-            scaffold == "Chr02_Pall" ~ "Two",
-            scaffold == "Chr03_Occ" ~ "One",
-            scaffold == "Chr03_Pall" ~ "Two",
-            scaffold == "Chr04_Occ" ~ "One",
-            scaffold == "Chr04_Pall" ~ "Two",
-            scaffold == "Chr05_Occ" ~ "One",
-            scaffold == "Chr05_Pall" ~ "Two",
-            scaffold == "Chr06_Occ" ~ "One",
-            scaffold == "Chr06_Pall" ~ "Two",
-            scaffold == "Chr07_Occ" ~ "One",
-            scaffold == "Chr07_Pall" ~ "Two",
-            scaffold == "Chr08_Occ" ~ "One",
-            scaffold == "Chr08_Pall" ~ "Two"
+            chrom == 1 ~ "One",
+            chrom == 2 ~ "Two",
+            chrom == 3 ~ "One",
+            chrom == 4 ~ "Two",
+            chrom == 5 ~ "One",
+            chrom == 6 ~ "Two",
+            chrom == 7 ~ "One",
+            chrom == 8 ~ "Two",
+            chrom == 9 ~ "One",
+            chrom == 10 ~ "Two",
+            chrom == 11 ~ "One",
+            chrom == 12 ~ "Two",
+            chrom == 13 ~ "One",
+            chrom == 14 ~ "Two",
+            chrom == 15 ~ "One",
+            chrom == 16 ~ "Two"
         )
     ) %>%
     ggplot(aes(x = WinCenter_cum, y = -log10(q))) +
@@ -152,34 +156,24 @@ manhat_plot <- not_outliers %>%
     scale_colour_viridis_c(option = "plasma", direction = -1) +
     scale_fill_viridis_c(option = "plasma", direction = -1) +
     geom_hline(
-        yintercept = -log10(0.05),
+        yintercept = -log10(snakemake@params[["qval_cut"]]),
         color = "grey40",
         linetype = "dashed"
     ) +
-    scale_x_continuous(label = axis_set$scaffold, breaks = axis_set$center) +
+    scale_x_continuous(label = axis_set$chrom, breaks = axis_set$center) +
     scale_y_continuous(expand = c(0, 0)) +
     coord_cartesian(ylim = c(0, 2)) +
     labs(color = "# Cities with evidence of selection",
          fill = "# Cities with evidence of selection") +
     ylab(expression(-log[10] * "(q-value)")) + xlab("") +
     theme_classic() +
+    my_theme +
     theme(
         legend.position = "top",
         legend.direction = "horizontal",
         legend.key.width = unit(2, "cm"),
-        legend.title = element_text(size = 12, face = "bold"),
-        legend.text = element_text(size = 10, face = "bold"),
-        panel.border = element_blank(),
-        panel.grid.major.x = element_blank(),
-        panel.grid.minor.x = element_blank(),
-        axis.text = element_text(size = 16),
-        axis.title = element_text(size = 20),
-        axis.text.x = element_text(
-            size = 14,
-            angle = 45,
-            hjust = 1,
-            vjust = 1
-        ),
+        legend.title = element_text(face = "bold"),
+        legend.text = element_text(face = "bold")
     ) +
     guides(colour = guide_colourbar(title.position = "top", title.hjust = 0.5))
 
@@ -201,8 +195,7 @@ outlier_hist <- ggplot(outliers, aes(x = n_est)) +
     xlab("# of cities with evidence of selection") +
     ylab("# of genomic windows") +
     theme_classic()  +
-    theme(axis.title = element_text(size = 14),
-          axis.text = element_text(size = 12))
+    my_theme
 
 ggsave(
     filename = snakemake@output[["hist"]],

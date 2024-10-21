@@ -47,3 +47,24 @@ load_windowed_c2 <- function(path){
         mutate(city = city)
     return(df)
 }
+
+remap_chr_names <- function(df){
+    df_out <- df %>% 
+    mutate(chrom = case_when(chrom == 'Chr01_Occ' ~ 1,
+           chrom == 'Chr01_Pall' ~ 2,
+           chrom == 'Chr02_Occ' ~ 3,
+           chrom == 'Chr02_Pall' ~ 4,
+           chrom == 'Chr03_Occ' ~ 5,
+           chrom == 'Chr03_Pall' ~ 6,
+           chrom == 'Chr04_Occ' ~ 7,
+           chrom == 'Chr04_Pall' ~ 8,
+           chrom == 'Chr05_Occ' ~ 9,
+           chrom == 'Chr05_Pall' ~ 10,
+           chrom == 'Chr06_Occ' ~ 11,
+           chrom == 'Chr06_Pall' ~ 12,
+           chrom == 'Chr07_Occ' ~ 13,
+           chrom == 'Chr07_Pall' ~ 14,
+           chrom == 'Chr08_Occ' ~ 15,
+           chrom == 'Chr08_Pall' ~ 16))
+    return(df_out)
+}
