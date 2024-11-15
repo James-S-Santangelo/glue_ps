@@ -35,8 +35,8 @@ rule angsd_snp_af_allSamples:
             -doMajorMinor 4 \
             -baq 2 \
             -ref {input.ref} \
-            -doCounts 1 \
             -doMaf 1 \
+            -minMaf 0.01 \
             -SNP_pval 1e-6 \
             -setMinDepthInd 1 \
             -minInd $MIN_IND \
