@@ -22,8 +22,8 @@ rule angsd_snp_af_allSamples:
         out = f'{ANGSD_DIR}/maf/allSamples/{{chrom}}/{{chrom}}_allSamples_snps'
     threads: 6
     resources:
-        mem_mb = lambda wildcards, attempt: attempt * 20000,
-        runtime = lambda wildcards, attempt: attempt * 360
+        mem_mb = 25000,
+        runtime = lambda wildcards, attempt: attempt * 960
     shell:
         """
         NUM_IND=$( wc -l < {input.bams} );
