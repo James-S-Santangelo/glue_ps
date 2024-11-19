@@ -18,7 +18,7 @@ rule create_alleleCount_files_byCity:
         miss = f"{PROGRAM_RESOURCE_DIR}/baypass/allSites/missing.sites"
     conda: "../envs/baypass.yaml"
     resources:
-        mem_mb = lambda wildcards, attempt: attempt * 8000,
+        mem_mb = lambda wildcards, attempt: attempt * 40000,
         runtime = lambda wildcards, attempt: attempt * 60 
     params:
         maf_prefix = f"{ANGSD_DIR}/maf",
@@ -52,12 +52,13 @@ rule split_baypass_global_input_files:
         site_order = rules.create_alleleCount_files_byCity.output.site_order,
         perCity_geno = expand(rules.create_alleleCount_files_byCity.output.perCity_geno, city=CITIES)
     output:
-        "text.txt",
         as_geno = expand(f"{PROGRAM_RESOURCE_DIR}/baypass/split_files/allSamples/splits/allSamples_{{n}}.geno", n=BAYPASS_SPLITS),
         site_order = expand(f"{PROGRAM_RESOURCE_DIR}/baypass/split_files/allSamples/site_order/site_order_{{n}}.txt", n=BAYPASS_SPLITS),
         perCity_geno = expand(f"{PROGRAM_RESOURCE_DIR}/baypass/split_files/byCity/{{city}}/{{city}}_{{n}}.geno", city=CITIES, n=BAYPASS_SPLITS)
     conda: "../envs/baypass.yaml"
     params:
+        out_prefix = f"{PROGRAM_RESOURCE_DIR}/baypass/split_files",
+        in_prefix = f"{PROGRAM_RESOURCE_DIR}/baypass/allSites",
         cities = CITIES,
         splits = BAYPASS_SPLITS
     notebook:
@@ -70,22 +71,24 @@ rule split_baypass_global_input_files:
 rule baypass_coreModel_allSamples:
     input:
         geno = get_baypass_coreModel_input_geno,
-        cont = rules.create_baypass_global_input_files.output.cont
+        cont = rules.create_baypass_global_input_files.output.cont,
+        pool = rules.create_baypass_global_input_files.output.pool
     output:
         log = f"{BAYPASS_DIR}/coreModel_allSamples/seed{{k}}/split{{n}}/allSamples_seed{{k}}_split{{n}}_baypass.log",
         dic = f"{BAYPASS_DIR}/coreModel_allSamples/seed{{k}}/split{{n}}/allSamples_seed{{k}}_split{{n}}_DIC.out",
         omega_mat = f"{BAYPASS_DIR}/coreModel_allSamples/seed{{k}}/split{{n}}/allSamples_seed{{k}}_split{{n}}_mat_omega.out",
         beta_sum = f"{BAYPASS_DIR}/coreModel_allSamples/seed{{k}}/split{{n}}/allSamples_seed{{k}}_split{{n}}_summary_beta_params.out",
         omega_lda = f"{BAYPASS_DIR}/coreModel_allSamples/seed{{k}}/split{{n}}/allSamples_seed{{k}}_split{{n}}_summary_lda_omega.out",
-        pif_sum = f"{BAYPASS_DIR}/coreModel_allSamples/seed{{k}}/split{{n}}/allSamples_seed{{k}}_split{{n}}_summary_pij.out",
+        pif_sum = f"{BAYPASS_DIR}/coreModel_allSamples/seed{{k}}/split{{n}}/allSamples_seed{{k}}_split{{n}}_summary_yij_pij.out",
         pi_xtx = f"{BAYPASS_DIR}/coreModel_allSamples/seed{{k}}/split{{n}}/allSamples_seed{{k}}_split{{n}}_summary_pi_xtx.out",
         cont_out = f"{BAYPASS_DIR}/coreModel_allSamples/seed{{k}}/split{{n}}/allSamples_seed{{k}}_split{{n}}_summary_contrast.out",
+        bf_out = f"{BAYPASS_DIR}/coreModel_allSamples/seed{{k}}/split{{n}}/allSamples_seed{{k}}_split{{n}}_summary_betai_reg.out"
     log: f"{LOG_DIR}/baypass/coreModel_allSamples/seed{{k}}/seed{{k}}_split{{n}}.log"
     container: "library://james-s-santangelo/baypass/baypass:2.41"
     threads: 8
     resources:
         mem_mb = lambda wildcards, attempt: attempt * 8000,
-        runtime = lambda wildcards, attempt: attempt * 720
+        runtime = lambda wildcards, attempt: attempt * 960
     params:
         out_prefix = f"{BAYPASS_DIR}/coreModel_allSamples/seed{{k}}/split{{n}}/allSamples_seed{{k}}_split{{n}}"
     shell:
@@ -94,6 +97,8 @@ rule baypass_coreModel_allSamples:
             -outprefix {params.out_prefix} \
             -seed {wildcards.k} \
             -contrastfile {input.cont} \
+            -efile {input.cont} \
+            -poolsizefile {input.pool} \
             -nthreads {threads} 2> {log}
         """
 
@@ -106,15 +111,16 @@ rule baypass_coreModel_byCity:
         omega_mat = f"{BAYPASS_DIR}/coreModel_byCity/{{city}}/split{{n}}/{{city}}_split{{n}}_mat_omega.out",
         beta_sum = f"{BAYPASS_DIR}/coreModel_byCity/{{city}}/split{{n}}/{{city}}_split{{n}}_summary_beta_params.out",
         omega_lda = f"{BAYPASS_DIR}/coreModel_byCity/{{city}}/split{{n}}/{{city}}_split{{n}}_summary_lda_omega.out",
-        pif_sum = f"{BAYPASS_DIR}/coreModel_byCity/{{city}}/split{{n}}/{{city}}_split{{n}}_summary_pij.out",
+        pif_sum = f"{BAYPASS_DIR}/coreModel_byCity/{{city}}/split{{n}}/{{city}}_split{{n}}_summary_yij_pij.out",
         pi_xtx = f"{BAYPASS_DIR}/coreModel_byCity/{{city}}/split{{n}}/{{city}}_split{{n}}_summary_pi_xtx.out",
         cont_out = f"{BAYPASS_DIR}/coreModel_byCity/{{city}}/split{{n}}/{{city}}_split{{n}}_summary_contrast.out",
+        bf_out = f"{BAYPASS_DIR}/coreModel_byCity/{{city}}/split{{n}}/{{city}}_split{{n}}_summary_betai_reg.out"
     log: f"{LOG_DIR}/baypass/coreModel_byCity/{{city}}/{{city}}_split{{n}}.log"
     container: "library://james-s-santangelo/baypass/baypass:2.41"
     threads: 4
     resources:
         mem_mb = lambda wildcards, attempt: attempt * 2000,
-        runtime = lambda wildcards, attempt: attempt * 180
+        runtime = lambda wildcards, attempt: attempt * 240
     params:
         out_prefix = f"{BAYPASS_DIR}/coreModel_byCity/{{city}}/split{{n}}/{{city}}_split{{n}}"
     shell:
@@ -123,6 +129,8 @@ rule baypass_coreModel_byCity:
             -outprefix {params.out_prefix} \
             -seed 1 \
             -contrastfile {input.cont} \
+            -efile {input.cont} \
+            -poolsizefile {input.pool} \
             -nthreads {threads} 2> {log}
         """
 
@@ -174,9 +182,10 @@ rule baypass_outlier_test:
 
 rule baypass_done:
     input:
-        expand(rules.generate_windowed_c2_byCity.output, city=CITIES),
-        rules.fmd_and_omega_mat_pca.output,
-        rules.baypass_outlier_test.output,
+        # expand(rules.generate_windowed_c2_byCity.output, city=CITIES),
+        # rules.fmd_and_omega_mat_pca.output,
+        # rules.baypass_outlier_test.output,
+        expand(rules.baypass_coreModel_byCity.output, city=CITIES, n=BAYPASS_SPLITS),
         expand(rules.baypass_coreModel_byCity.output, city=CITIES, n=BAYPASS_SPLITS)
     output:
         f"{BAYPASS_DIR}/baypass.done"

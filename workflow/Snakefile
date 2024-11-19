@@ -33,7 +33,7 @@ ANGSD_DIR = f"{config['results_prefix']}/angsd"
 BAYPASS_DIR = f"{config['results_prefix']}/baypass" 
 ANALYSIS_DIR = f"{config['results_prefix']}/analyses"
 
-BAYPASS_SPLITS = [x for x in range(80)]
+BAYPASS_SPLITS = [x for x in range(40)]
 
 wildcard_constraints:
     chrom='|'.join([x for x in CHROMOSOMES]),
