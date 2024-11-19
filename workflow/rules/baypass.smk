@@ -4,7 +4,8 @@
 
 rule create_alleleCount_files_byCity:
     input:
-        perCity_mafs = lambda w: expand(rules.angsd_alleleCounts_byCity_byHabitat.output.mafs, city=CITIES, chrom=CHROMOSOMES, habitat=HABITATS),
+        perCity_mafs = expand(rules.angsd_alleleCounts_byCity_byHabitat.output.mafs, city=CITIES, chrom=CHROMOSOMES, habitat=HABITATS),
+        perCity_bams = expand(rules.create_bam_list_byHabitat_allSites.output, city=CITIES, habitat=HABITATS),
         global_mafs = expand(rules.angsd_snp_af_allSamples.output.mafs, chrom=CHROMOSOMES),
         global_sites = expand(rules.extract_and_index_af_allSamples_sites.output.sites, chrom=CHROMOSOMES),
         pos = lambda w: expand(rules.angsd_alleleCounts_byCity_byHabitat.output.pos, city=CITIES, chrom=CHROMOSOMES, habitat=HABITATS),
@@ -12,13 +13,16 @@ rule create_alleleCount_files_byCity:
     output:
         perCity_geno = expand(f"{PROGRAM_RESOURCE_DIR}/baypass/allSites/{{city}}/{{city}}.geno", city=CITIES),
         perCity_cont = expand(f"{PROGRAM_RESOURCE_DIR}/baypass/allSites/{{city}}/{{city}}.cf", city=CITIES),
+        perCity_pool = expand(f"{PROGRAM_RESOURCE_DIR}/baypass/allSites/{{city}}/{{city}}.poolsize", city=CITIES),
         site_order = f"{PROGRAM_RESOURCE_DIR}/baypass/allSites/site_order.txt",
-        miss = f"{PROGRAM_RESOURCE_DIR}/baypass/missing.sites"
+        miss = f"{PROGRAM_RESOURCE_DIR}/baypass/allSites/missing.sites"
     conda: "../envs/baypass.yaml"
     resources:
-        mem_mb = lambda wildcards, attempt: attempt * 60000,
-        runtime = lambda wildcards, attempt: attempt * 120
+        mem_mb = lambda wildcards, attempt: attempt * 8000,
+        runtime = lambda wildcards, attempt: attempt * 60 
     params:
+        maf_prefix = f"{ANGSD_DIR}/maf",
+        out_prefix = f"{PROGRAM_RESOURCE_DIR}/baypass/allSites",
         cities = CITIES,
         habitats = HABITATS,
         chrom = CHROMOSOMES
@@ -29,14 +33,17 @@ rule create_alleleCount_files_byCity:
 rule create_baypass_global_input_files:
     input:
         geno = expand(rules.create_alleleCount_files_byCity.output.perCity_geno, city=CITIES),
-        cont = expand(rules.create_alleleCount_files_byCity.output.perCity_cont, city=CITIES)
+        cont = expand(rules.create_alleleCount_files_byCity.output.perCity_cont, city=CITIES),
+        pool = expand(rules.create_alleleCount_files_byCity.output.perCity_pool, city=CITIES)
     output:
         geno = f"{PROGRAM_RESOURCE_DIR}/baypass/allSites/allSamples.geno",
         cont = f"{PROGRAM_RESOURCE_DIR}/baypass/allSites/allSamples.cont",
+        pool = f"{PROGRAM_RESOURCE_DIR}/baypass/allSites/allSamples.pool",
     shell:
         """
         paste {input.geno} | tr '\t' ' ' > {output.geno}
         paste {input.cont} | tr '\t' ' ' > {output.cont}
+        paste {input.pool} | tr '\t' ' ' > {output.pool}
         """
 
 rule split_baypass_global_input_files:
@@ -45,6 +52,7 @@ rule split_baypass_global_input_files:
         site_order = rules.create_alleleCount_files_byCity.output.site_order,
         perCity_geno = expand(rules.create_alleleCount_files_byCity.output.perCity_geno, city=CITIES)
     output:
+        "text.txt",
         as_geno = expand(f"{PROGRAM_RESOURCE_DIR}/baypass/split_files/allSamples/splits/allSamples_{{n}}.geno", n=BAYPASS_SPLITS),
         site_order = expand(f"{PROGRAM_RESOURCE_DIR}/baypass/split_files/allSamples/site_order/site_order_{{n}}.txt", n=BAYPASS_SPLITS),
         perCity_geno = expand(f"{PROGRAM_RESOURCE_DIR}/baypass/split_files/byCity/{{city}}/{{city}}_{{n}}.geno", city=CITIES, n=BAYPASS_SPLITS)
