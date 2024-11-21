@@ -138,16 +138,6 @@ rule baypass_coreModel_byCity:
 #### ANALYSES ####
 ##################
 
-rule generate_windowed_c2_byCity:
-    input:
-        c2 = lambda w: expand(rules.baypass_coreModel_byCity.output.cont_out, city=w.city, n=BAYPASS_SPLITS),
-        site_order = expand(rules.split_baypass_global_input_files.output.site_order, n=BAYPASS_SPLITS)
-    output:
-        win_c2 = f"{ANALYSIS_DIR}/baypass/windowed_c2/{{city}}_windowed_c2.txt"
-    conda: "../envs/baypass.yaml"
-    script:
-        "../scripts/r/generate_windowed_c2_byCity.R"
-
 rule fmd_and_omega_mat_pca:
     input:
         omega_mat = expand(rules.baypass_coreModel_allSamples.output.omega_mat, n=BAYPASS_SPLITS, k=[1,2,3])
@@ -160,6 +150,16 @@ rule fmd_and_omega_mat_pca:
         habitats = HABITATS,
     notebook:
         "../notebooks/fmd_and_omega_mat_pca.r.ipynb"
+
+rule generate_windowed_c2_byCity:
+    input:
+        c2 = lambda w: expand(rules.baypass_coreModel_byCity.output.cont_out, city=w.city, n=BAYPASS_SPLITS),
+        site_order = expand(rules.split_baypass_global_input_files.output.site_order, n=BAYPASS_SPLITS)
+    output:
+        win_c2 = f"{ANALYSIS_DIR}/baypass/windowed_c2/{{city}}_windowed_c2.txt"
+    conda: "../envs/baypass.yaml"
+    script:
+        "../scripts/r/generate_windowed_c2_byCity.R"
 
 rule baypass_outlier_test:
     input:
