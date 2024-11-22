@@ -5,15 +5,14 @@
 rule create_alleleCount_files_byCity:
     input:
         perCity_mafs = expand(rules.angsd_alleleCounts_byCity_byHabitat.output.mafs, city=CITIES, chrom=CHROMOSOMES, habitat=HABITATS),
-        perCity_bams = expand(rules.create_bam_list_byHabitat_allSites.output, city=CITIES, habitat=HABITATS),
         global_mafs = expand(rules.angsd_snp_af_allSamples.output.mafs, chrom=CHROMOSOMES),
         global_sites = expand(rules.extract_and_index_af_allSamples_sites.output.sites, chrom=CHROMOSOMES),
         pos = lambda w: expand(rules.angsd_alleleCounts_byCity_byHabitat.output.pos, city=CITIES, chrom=CHROMOSOMES, habitat=HABITATS),
         counts = lambda w: expand(rules.angsd_alleleCounts_byCity_byHabitat.output.counts, city=CITIES, chrom=CHROMOSOMES, habitat=HABITATS),
     output:
+        "test.txt",
         perCity_geno = expand(f"{PROGRAM_RESOURCE_DIR}/baypass/allSites/{{city}}/{{city}}.geno", city=CITIES),
         perCity_cont = expand(f"{PROGRAM_RESOURCE_DIR}/baypass/allSites/{{city}}/{{city}}.cf", city=CITIES),
-        perCity_pool = expand(f"{PROGRAM_RESOURCE_DIR}/baypass/allSites/{{city}}/{{city}}.poolsize", city=CITIES),
         site_order = f"{PROGRAM_RESOURCE_DIR}/baypass/allSites/site_order.txt",
         miss = f"{PROGRAM_RESOURCE_DIR}/baypass/allSites/missing.sites"
     conda: "../envs/baypass.yaml"
@@ -34,11 +33,9 @@ rule create_baypass_global_input_files:
     input:
         geno = expand(rules.create_alleleCount_files_byCity.output.perCity_geno, city=CITIES),
         cont = expand(rules.create_alleleCount_files_byCity.output.perCity_cont, city=CITIES),
-        pool = expand(rules.create_alleleCount_files_byCity.output.perCity_pool, city=CITIES)
     output:
         geno = f"{PROGRAM_RESOURCE_DIR}/baypass/allSites/allSamples.geno",
         cont = f"{PROGRAM_RESOURCE_DIR}/baypass/allSites/allSamples.cont",
-        pool = f"{PROGRAM_RESOURCE_DIR}/baypass/allSites/allSamples.pool",
     shell:
         """
         paste {input.geno} | tr '\t' ' ' > {output.geno}
@@ -72,14 +69,13 @@ rule baypass_coreModel_allSamples:
     input:
         geno = get_baypass_coreModel_input_geno,
         cont = rules.create_baypass_global_input_files.output.cont,
-        pool = rules.create_baypass_global_input_files.output.pool
     output:
         log = f"{BAYPASS_DIR}/coreModel_allSamples/seed{{k}}/split{{n}}/allSamples_seed{{k}}_split{{n}}_baypass.log",
         dic = f"{BAYPASS_DIR}/coreModel_allSamples/seed{{k}}/split{{n}}/allSamples_seed{{k}}_split{{n}}_DIC.out",
         omega_mat = f"{BAYPASS_DIR}/coreModel_allSamples/seed{{k}}/split{{n}}/allSamples_seed{{k}}_split{{n}}_mat_omega.out",
         beta_sum = f"{BAYPASS_DIR}/coreModel_allSamples/seed{{k}}/split{{n}}/allSamples_seed{{k}}_split{{n}}_summary_beta_params.out",
         omega_lda = f"{BAYPASS_DIR}/coreModel_allSamples/seed{{k}}/split{{n}}/allSamples_seed{{k}}_split{{n}}_summary_lda_omega.out",
-        pif_sum = f"{BAYPASS_DIR}/coreModel_allSamples/seed{{k}}/split{{n}}/allSamples_seed{{k}}_split{{n}}_summary_yij_pij.out",
+        pij_sum = f"{BAYPASS_DIR}/coreModel_allSamples/seed{{k}}/split{{n}}/allSamples_seed{{k}}_split{{n}}_summary_pij.out",
         pi_xtx = f"{BAYPASS_DIR}/coreModel_allSamples/seed{{k}}/split{{n}}/allSamples_seed{{k}}_split{{n}}_summary_pi_xtx.out",
         cont_out = f"{BAYPASS_DIR}/coreModel_allSamples/seed{{k}}/split{{n}}/allSamples_seed{{k}}_split{{n}}_summary_contrast.out",
         bf_out = f"{BAYPASS_DIR}/coreModel_allSamples/seed{{k}}/split{{n}}/allSamples_seed{{k}}_split{{n}}_summary_betai_reg.out"
@@ -98,7 +94,6 @@ rule baypass_coreModel_allSamples:
             -seed {wildcards.k} \
             -contrastfile {input.cont} \
             -efile {input.cont} \
-            -poolsizefile {input.pool} \
             -nthreads {threads} 2> {log}
         """
 
@@ -111,7 +106,7 @@ rule baypass_coreModel_byCity:
         omega_mat = f"{BAYPASS_DIR}/coreModel_byCity/{{city}}/split{{n}}/{{city}}_split{{n}}_mat_omega.out",
         beta_sum = f"{BAYPASS_DIR}/coreModel_byCity/{{city}}/split{{n}}/{{city}}_split{{n}}_summary_beta_params.out",
         omega_lda = f"{BAYPASS_DIR}/coreModel_byCity/{{city}}/split{{n}}/{{city}}_split{{n}}_summary_lda_omega.out",
-        pif_sum = f"{BAYPASS_DIR}/coreModel_byCity/{{city}}/split{{n}}/{{city}}_split{{n}}_summary_yij_pij.out",
+        pif_sum = f"{BAYPASS_DIR}/coreModel_byCity/{{city}}/split{{n}}/{{city}}_split{{n}}_summary_pij.out",
         pi_xtx = f"{BAYPASS_DIR}/coreModel_byCity/{{city}}/split{{n}}/{{city}}_split{{n}}_summary_pi_xtx.out",
         cont_out = f"{BAYPASS_DIR}/coreModel_byCity/{{city}}/split{{n}}/{{city}}_split{{n}}_summary_contrast.out",
         bf_out = f"{BAYPASS_DIR}/coreModel_byCity/{{city}}/split{{n}}/{{city}}_split{{n}}_summary_betai_reg.out"
@@ -130,7 +125,6 @@ rule baypass_coreModel_byCity:
             -seed 1 \
             -contrastfile {input.cont} \
             -efile {input.cont} \
-            -poolsizefile {input.pool} \
             -nthreads {threads} 2> {log}
         """
 
