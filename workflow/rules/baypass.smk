@@ -64,8 +64,8 @@ rule baypass_coreModel_allSamples:
     container: "library://james-s-santangelo/baypass/baypass:2.41"
     threads: 8
     resources:
-        mem_mb = lambda wildcards, attempt: attempt * 8000,
-        runtime = lambda wildcards, attempt: attempt * 960
+        mem_mb = lambda wildcards, attempt: attempt * 4000,
+        runtime = 720 
     params:
         out_prefix = f"{BAYPASS_DIR}/coreModel_allSamples/seed{{k}}/split{{n}}/allSamples_seed{{k}}_split{{n}}"
     shell:
@@ -115,7 +115,7 @@ rule baypass_coreModel_allSamples:
 
 rule fmd_and_omega_mat_pca:
     input:
-        omega_mat = expand(rules.baypass_coreModel_allSamples.output.omega_mat, n=BAYPASS_SPLITS, k=[1,2,3])
+        omega_mat = expand(rules.baypass_coreModel_allSamples.output.omega_mat, n=BAYPASS_SPLITS, k=[42, 420, 3700])
     output:
         fmd_box = f"{ANALYSIS_DIR}/baypass/figures/fmd_boxplot.pdf",
         pca = f"{ANALYSIS_DIR}/baypass/figures/pca_by_continent_and_habitat.pdf",
@@ -160,7 +160,7 @@ rule baypass_done:
         # expand(rules.generate_windowed_c2_byCity.output, city=CITIES),
         # rules.fmd_and_omega_mat_pca.output,
         # rules.baypass_outlier_test.output,
-        expand(rules.baypass_coreModel_allSamples.output, city=CITIES, n=BAYPASS_SPLITS, k=[1,2,3]),
+        expand(rules.baypass_coreModel_allSamples.output, city=CITIES, n=0, k=[42, 420, 3700]),
         # expand(rules.baypass_coreModel_byCity.output, city=CITIES, n=BAYPASS_SPLITS)
     output:
         f"{BAYPASS_DIR}/baypass.done"
