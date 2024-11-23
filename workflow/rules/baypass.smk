@@ -160,7 +160,7 @@ rule baypass_done:
         # expand(rules.generate_windowed_c2_byCity.output, city=CITIES),
         # rules.fmd_and_omega_mat_pca.output,
         # rules.baypass_outlier_test.output,
-        expand(rules.baypass_coreModel_allSamples.output, city=CITIES, n=0, k=[42, 420, 3700]),
+        expand(rules.baypass_coreModel_allSamples.output, city=CITIES, n=BAYPASS_SPLITS, k=[42, 420, 3700]),
         # expand(rules.baypass_coreModel_byCity.output, city=CITIES, n=BAYPASS_SPLITS)
     output:
         f"{BAYPASS_DIR}/baypass.done"
