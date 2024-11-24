@@ -113,6 +113,49 @@ rule baypass_coreModel_allSamples:
 #### ANALYSES ####
 ##################
 
+rule simulate_baypass:
+    input:
+        omega = expand(rules.baypass_coreModel_allSamples.output.omega_mat, n=37, k=3700),
+        betas = expand(rules.baypass_coreModel_allSamples.output.beta_sum, n=37, k=3700),
+        geno = lambda w: [x for x in rules.split_baypass_global_input_files.output.as_geno if "37" in x]
+    output:
+        simu_out = f"{PROGRAM_RESOURCE_DIR}/baypass/simulated.geno"
+    conda: "../envs/baypass.yaml"
+    notebook:
+        "../notebooks/simulate_baypass.r.ipynb"
+        
+rule baypass_coreModel_simulated:
+    input:
+        geno = rules.simulate_baypass.output.simu_out,
+        cont = rules.create_baypass_global_input_files.output.as_cont,
+    output:
+        log = f"{BAYPASS_DIR}/coreModel_simulated/simulated_baypass.log",
+        dic = f"{BAYPASS_DIR}/coreModel_simulated/simulated_DIC.out",
+        omega_mat = f"{BAYPASS_DIR}/coreModel_simulated/simulated_mat_omega.out",
+        beta_sum = f"{BAYPASS_DIR}/coreModel_simulated/simulated_summary_beta_params.out",
+        omega_lda = f"{BAYPASS_DIR}/coreModel_simulated/simulated_summary_lda_omega.out",
+        pij_sum = f"{BAYPASS_DIR}/coreModel_simulated/simulated_summary_pij.out",
+        pi_xtx = f"{BAYPASS_DIR}/coreModel_simulated/simulated_summary_pi_xtx.out",
+        cont_out = f"{BAYPASS_DIR}/coreModel_simulated/simulated_summary_contrast.out",
+        bf_out = f"{BAYPASS_DIR}/coreModel_simulated/simulated_summary_betai_reg.out"
+    log: f"{LOG_DIR}/baypass/coreModel_simulated/coreModel_simulated.log"
+    container: "library://james-s-santangelo/baypass/baypass:2.41"
+    threads: 8
+    resources:
+        mem_mb = lambda wildcards, attempt: attempt * 4000,
+        runtime = 720 
+    params:
+        out_prefix = f"{BAYPASS_DIR}/coreModel_simulated/simulated"
+    shell:
+        """
+        baypass -gfile {input.geno} \
+            -outprefix {params.out_prefix} \
+            -seed 42 \
+            -contrastfile {input.cont} \
+            -efile {input.cont} \
+            -nthreads {threads} 2> {log}
+        """
+
 rule fmd_and_omega_mat_pca:
     input:
         omega_mat = expand(rules.baypass_coreModel_allSamples.output.omega_mat, n=BAYPASS_SPLITS, k=[42, 420, 3700])
@@ -161,6 +204,7 @@ rule baypass_done:
         # rules.fmd_and_omega_mat_pca.output,
         # rules.baypass_outlier_test.output,
         expand(rules.baypass_coreModel_allSamples.output, city=CITIES, n=BAYPASS_SPLITS, k=[42, 420, 3700]),
+        rules.baypass_coreModel_simulated.output
         # expand(rules.baypass_coreModel_byCity.output, city=CITIES, n=BAYPASS_SPLITS)
     output:
         f"{BAYPASS_DIR}/baypass.done"
