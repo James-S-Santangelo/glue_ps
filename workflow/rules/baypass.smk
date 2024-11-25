@@ -158,10 +158,18 @@ rule baypass_coreModel_simulated:
 
 rule fmd_and_omega_mat_pca:
     input:
-        omega_mat = expand(rules.baypass_coreModel_allSamples.output.omega_mat, n=BAYPASS_SPLITS, k=[42, 420, 3700])
+        obs_omega_mat = expand(rules.baypass_coreModel_allSamples.output.omega_mat, n=BAYPASS_SPLITS, k=[42, 420, 3700]),
+        obs_beta_sum = expand(rules.baypass_coreModel_allSamples.output.beta_sum, n=BAYPASS_SPLITS, k=[42, 420, 3700]),
+        sim_omega_mat = expand(rules.baypass_coreModel_simulated.output.omega_mat),
+        sim_beta_sum = expand(rules.baypass_coreModel_simulated.output.beta_sum)
     output:
         fmd_box = f"{ANALYSIS_DIR}/baypass/figures/fmd_boxplot.pdf",
-        pca = f"{ANALYSIS_DIR}/baypass/figures/pca_by_continent_and_habitat.pdf",
+        fmd_sum = f"{ANALYSIS_DIR}/baypass/tables/fmd_summary.txt",
+        alpha_box = f"{ANALYSIS_DIR}/baypass/figures/alpha_boxplot.pdf",
+        beta_box = f"{ANALYSIS_DIR}/baypass/figures/beta_boxplot.pdf",
+        obs_sim_stats = f"{ANALYSIS_DIR}/baypass/tables/observe_vs_simulated_statistics.txt",
+        obs_rand_pca = f"{ANALYSIS_DIR}/baypass/figures/pca_by_continent_and_habitat_observed.pdf",
+        sim_pca = f"{ANALYSIS_DIR}/baypass/figures/pca_by_continent_and_habitat_simulated.pdf",
     conda: "../envs/baypass.yaml"
     params:
         cities = CITIES,
@@ -204,7 +212,7 @@ rule baypass_done:
         # rules.fmd_and_omega_mat_pca.output,
         # rules.baypass_outlier_test.output,
         expand(rules.baypass_coreModel_allSamples.output, city=CITIES, n=BAYPASS_SPLITS, k=[42, 420, 3700]),
-        rules.baypass_coreModel_simulated.output
+        rules.fmd_and_omega_mat_pca.output
         # expand(rules.baypass_coreModel_byCity.output, city=CITIES, n=BAYPASS_SPLITS)
     output:
         f"{BAYPASS_DIR}/baypass.done"
