@@ -30,10 +30,7 @@ LOG_DIR = config['log_prefix']
 REF_DIR = f"{config['results_prefix']}/ref"
 PROGRAM_RESOURCE_DIR = f"{config['results_prefix']}/program_resources"
 ANGSD_DIR = f"{config['results_prefix']}/angsd"
-BAYPASS_DIR = f"{config['results_prefix']}/baypass" 
 ANALYSIS_DIR = f"{config['results_prefix']}/analyses"
-
-BAYPASS_SPLITS = [x for x in range(40)]
 
 wildcard_constraints:
     chrom='|'.join([x for x in CHROMOSOMES]),
@@ -46,23 +43,16 @@ localrules: copy_ref,
     create_bam_list_byHabitat_allSites,
     concat_habitat_bamLists_withinCities,
     concat_angsd_mafs_allSamples,
-    angsd_byHabitat_allSites_done,
-    angsd_alleleCounts_byCity_byHabitat_done,
-    create_baypass_global_input_files,
-    split_baypass_global_input_files
+    angsd_byHabitat_allSites_done
 
 include: 'rules/common.smk'
 
 rule all:
    input:
-        # f'{ANGSD_DIR}/angsd_fst_thetas_byCity.done',
-        f'{ANGSD_DIR}/angsd_alleleCounts_byCity_byHabitat.done',
-        f'{BAYPASS_DIR}/baypass.done',
-        # f"{ANALYSIS_DIR}/picmin/picmin.done"
+        f'{ANGSD_DIR}/angsd_fst_thetas_byCity.done',
+        f"{ANALYSIS_DIR}/picmin/picmin.done"
 
 include: 'rules/ref.smk'
 include: 'rules/angsd_fst_thetas_byCity.smk'
-include: 'rules/angsd_alleleCounts_byCity_byHabitat.smk'
-include: 'rules/baypass.smk'
-# include: 'rules/picmin.smk'
+include: 'rules/picmin.smk'
 # include: 'rules/angsd_gls.smk'
