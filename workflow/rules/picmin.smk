@@ -1,7 +1,7 @@
 rule install_picmin_dependencies:
     output:
        f"{ANALYSIS_DIR}/picmin/dependencies.done"
-    conda: '../envs/picmin.yaml'
+    conda: '../envs/r.yaml'
     shell:
         """
         Rscript -e "install.packages('poolr', repos = 'http://cran.us.r-project.org')"
@@ -19,7 +19,7 @@ rule generate_picmin_data:
         hist_fst = f"{ANALYSIS_DIR}/picmin/figures/missing_data_histogram_fst.pdf",
         hist_tp = f"{ANALYSIS_DIR}/picmin/figures/missing_data_histogram_tp.pdf",
         hist_td = f"{ANALYSIS_DIR}/picmin/figures/missing_data_histogram_td.pdf"
-    conda: '../envs/picmin.yaml'
+    conda: '../envs/r.yaml'
     script:
         "../scripts/r/generate_picmin_data.R"
 
@@ -31,7 +31,7 @@ rule run_picmin:
         picmin = f"{ANALYSIS_DIR}/picmin/csv/picmin/{{stat}}/picmin_{{stat}}_{{n}}_cities.csv",
         manhat = f"{ANALYSIS_DIR}/picmin/figures/manhattan/{{stat}}/picmin_manhattan_plot_{{stat}}_{{n}}_cities.pdf",
         hist = f"{ANALYSIS_DIR}/picmin/figures/outlier_histograms/{{stat}}/outliers_histogram_{{stat}}_{{n}}_cities.pdf"
-    conda: '../envs/picmin.yaml'
+    conda: '../envs/r.yaml'
     params:
         qval_cut = 0.05
     script:
@@ -44,7 +44,7 @@ rule pool_picmin:
         picmin = f"{ANALYSIS_DIR}/picmin/csv/picmin/{{stat}}/picmin_{{stat}}_pooled.csv",
         manhat = f"{ANALYSIS_DIR}/picmin/figures/manhattan/{{stat}}/picmin_manhattan_plot_{{stat}}_pooled.pdf",
         hist = f"{ANALYSIS_DIR}/picmin/figures/outlier_histograms/{{stat}}/outliers_histogram_{{stat}}_pooled.pdf"
-    conda: '../envs/picmin.yaml'
+    conda: '../envs/r.yaml'
     params:
         qval_cut = 0.05
     script:
