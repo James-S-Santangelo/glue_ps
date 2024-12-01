@@ -6,3 +6,5 @@ dependencies:
   - r-tidyverse
   - r-ggnewscale
   - r-devtools
+  - r-irkernel
+  - jupyter

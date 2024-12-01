@@ -4,7 +4,7 @@ rule create_angsd_asso_ybin_file:
         bams = rules.create_bam_list_allSamples_allSites.output
     output:
         f"{PROGRAM_RESOURCE_DIR}/angsd_habitats.ybin"
-    conda: "../envs/picmin.yaml"
+    conda: "../envs/r.yaml"
     script:
         "../scripts/r/create_angsd_asso_ybin_file.R"
 
@@ -87,11 +87,19 @@ rule angsd_asso_lg:
             -bam {input.bams} 2> {log}
         """
 
-
-rule angsd_asso_done:
+rule analyze_angsd_asso:
     input:
         expand(rules.angsd_asso_freq.output, chrom=CHROMOSOMES[0]),
         expand(rules.angsd_asso_lg.output, chrom=CHROMOSOMES[0])
+    output:
+        "test.txt"
+    conda: "../envs/r.yaml"
+    notebook:
+        "../notebooks/analyze_angsd_asso.r.ipynb"
+
+rule angsd_asso_done:
+    input:
+        rules.analyze_angsd_asso.output
     output:
         f"{ANGSD_DIR}/angsd_asso.done"
     shell:
