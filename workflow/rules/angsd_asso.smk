@@ -32,7 +32,7 @@ rule angsd_snps_allSamples:
         out = f'{ANGSD_DIR}/snps/allSamples/{{chrom}}/{{chrom}}_allSamples_snps'
     threads: 8
     resources:
-        mem_mb = lambda wildcards, attempt: attempt * 80000,
+        mem_mb = lambda wildcards, attempt: attempt * 24000,
         runtime = 1440
     shell:
         """
@@ -216,7 +216,7 @@ rule angsd_snps_allSamples:
 
 rule angsd_asso_done:
     input:
-        expand(rules.angsd_snps_allSamples.output, chrom=CHROMOSOMES[0])
+        expand(rules.angsd_snps_allSamples.output, chrom=CHROMOSOMES)
     output:
         f"{ANGSD_DIR}/angsd_asso.done"
     shell:
