@@ -30,7 +30,7 @@ rule angsd_snps_allSamples:
         min_ind = 1045, # 50% of Num samples
         maf = 0.05,
         out = f'{ANGSD_DIR}/snps/allSamples/{{chrom}}/{{chrom}}_allSamples_snps'
-    threads: 8
+    threads: 4
     resources:
         mem_mb = lambda wildcards, attempt: attempt * 24000,
         runtime = 1440
@@ -61,6 +61,34 @@ rule angsd_snps_allSamples:
             -doHWE 1 \
             -r {wildcards.chrom} \
             -bam {input.bams} 2> {log}
+        """
+
+rule create_ngsparalog_posfile:
+    input:
+        rules.angsd_snps_allSamples.output.pos
+    output:
+        f"{PROGRAM_RESOURCE_DIR}/ngsparalog/{{chrom}}_posfile.txt"
+    shell:
+        """
+        zcat {input} | tail -n +2 | cut -f1,2 > {output}
+        """
+
+rule ngsparalog:
+    input:
+        bams = rules.create_bam_list_allSamples_allSites.output,
+        pos = rules.create_ngsparalog_posfile.output
+    output:
+        out = f"{NGSPARALOG_DIR}/{{chrom}}_ngsparalog.txt"
+    log: f"{LOG_DIR}/ngsparalog/{{chrom}}_ngsparalog.log"
+    container: "/home/santang3/singularity_containers/ngsparalog.sif"
+    shell:
+        """
+        ( samtools mpileup -b {input.bams} \
+            -l {input.pos} \
+            -q 0 -Q 0 --ff UNMAP,DUP |\
+            ngsParalog calcLR \
+                -infile - \
+                -outfile {output} ) 2> {log}
         """
 
 # rule angsd_asso_freq:
@@ -216,7 +244,7 @@ rule angsd_snps_allSamples:
 
 rule angsd_asso_done:
     input:
-        expand(rules.angsd_snps_allSamples.output, chrom=CHROMOSOMES)
+        expand(rules.ngsparalog.output, chrom=CHROMOSOMES)
     output:
         f"{ANGSD_DIR}/angsd_asso.done"
     shell:

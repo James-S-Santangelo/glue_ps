@@ -30,6 +30,7 @@ LOG_DIR = config['log_prefix']
 REF_DIR = f"{config['results_prefix']}/ref"
 PROGRAM_RESOURCE_DIR = f"{config['results_prefix']}/program_resources"
 ANGSD_DIR = f"{config['results_prefix']}/angsd"
+NGSPARALOG_DIR = f"{config['results_prefix']}/ngsparalog"
 ANALYSIS_DIR = f"{config['results_prefix']}/analyses"
 
 wildcard_constraints:
