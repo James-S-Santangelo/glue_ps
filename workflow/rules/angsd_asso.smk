@@ -85,11 +85,26 @@ rule ngsparalog:
         """
         ( samtools mpileup -b {input.bams} \
             -l {input.pos} \
+            -r {wildcards.chrom} \
             -q 0 -Q 0 --ff UNMAP,DUP |\
             ngsParalog calcLR \
                 -infile - \
+                -minQ 20 -minind 1045, -mincov 1 \
                 -outfile {output} ) 2> {log}
         """
+
+rule identify_paralogous_alignments:
+    input:
+        para = expand(rules.ngsparalog.output, chrom=CHROMOSOMES)
+    output:
+        manhat = f"{ANALYSIS_DIR}/ngsparalog/ngsparalog_manhattan.pdf",
+        sites = expand(f"{PROGRAM_RESOURCE_DIR}/angsd_sites/{{chrom}}_filtered.sites", chrom=CHROMOSOMES)
+    conda: "../envs/r.yaml"
+    params:
+        out = lambda w: f"{PROGRAM_RESOURCE_DIR}/angsd_sites"
+    notebook:
+        "../notebooks/identify_paralogous_alignments.r.ipynb"
+
 
 # rule angsd_asso_freq:
 #     """
@@ -244,7 +259,7 @@ rule ngsparalog:
 
 rule angsd_asso_done:
     input:
-        expand(rules.ngsparalog.output, chrom=CHROMOSOMES)
+        rules.identify_paralogous_alignments.output
     output:
         f"{ANGSD_DIR}/angsd_asso.done"
     shell:
