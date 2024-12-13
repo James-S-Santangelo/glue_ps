@@ -1,12 +1,6 @@
-rule create_angsd_asso_ybin_file:
-    input:
-        samples = config["samples"],
-        bams = rules.create_bam_list_allSamples_allSites.output
-    output:
-        f"{PROGRAM_RESOURCE_DIR}/angsd_habitats.ybin"
-    conda: "../envs/r.yaml"
-    script:
-        "../scripts/r/create_angsd_asso_ybin_file.R"
+#######################
+#### IDENTIFY SNPS ####
+#######################
 
 rule angsd_snps_allSamples:
     """
@@ -63,7 +57,14 @@ rule angsd_snps_allSamples:
             -bam {input.bams} 2> {log}
         """
 
+##########################################
+#### EXCLUDE PUTATIVE PARALOGOUS SNPs ####
+##########################################
+
 rule create_ngsparalog_posfile:
+    """
+    Create position file of ngsParalog
+    """
     input:
         rules.angsd_snps_allSamples.output.pos
     output:
@@ -74,6 +75,9 @@ rule create_ngsparalog_posfile:
         """
 
 rule ngsparalog:
+    """
+    Run ngsParalog in parallel across chromosomes
+    """
     input:
         bams = rules.create_bam_list_allSamples_allSites.output,
         pos = rules.create_ngsparalog_posfile.output
@@ -93,7 +97,10 @@ rule ngsparalog:
                 -outfile {output} ) 2> {log}
         """
 
-rule identify_paralogous_alignments:
+rule identify_paralogous_snps:
+    """
+    Identify SNPs in putatively paralogous alignments. Write sites files that exclude these
+    """
     input:
         para = expand(rules.ngsparalog.output, chrom=CHROMOSOMES)
     output:
@@ -103,8 +110,35 @@ rule identify_paralogous_alignments:
     params:
         out = lambda w: f"{PROGRAM_RESOURCE_DIR}/angsd_sites"
     notebook:
-        "../notebooks/identify_paralogous_alignments.r.ipynb"
+        "../notebooks/identify_paralogous_snps.r.ipynb"
 
+rule index_filtered_snps:
+    """
+    Index SNPs sites files for ANGSD
+    """
+    input:
+        sites = lambda w: [x for x in rules.identify_paralogous_snps.output.sites if w.chrom in x]
+    output:
+        idx = f"{PROGRAM_RESOURCE_DIR}/angsd_sites/{{chrom}}_filtered.sites.idx",
+        bin = f"{PROGRAM_RESOURCE_DIR}/angsd_sites/{{chrom}}_filtered.sites.bin"
+    container: 'library://james-s-santangelo/angsd/angsd:0.938'
+    shell:
+        """
+        angsd sites index {input}
+        """
+
+rule create_angsd_asso_ybin_file:
+    """
+    Create ybin (i.e., phenotype file) for ANGSD association analysis
+    """
+    input:
+        samples = config["samples"],
+        bams = rules.create_bam_list_allSamples_allSites.output
+    output:
+        f"{PROGRAM_RESOURCE_DIR}/angsd_habitats.ybin"
+    conda: "../envs/r.yaml"
+    script:
+        "../scripts/r/create_angsd_asso_ybin_file.R"
 
 # rule angsd_asso_freq:
 #     """
@@ -259,7 +293,7 @@ rule identify_paralogous_alignments:
 
 rule angsd_asso_done:
     input:
-        rules.identify_paralogous_alignments.output
+        expand(rules.index_filtered_snps.output, chrom=CHROMOSOMES)
     output:
         f"{ANGSD_DIR}/angsd_asso.done"
     shell:
