@@ -267,7 +267,8 @@ rule ngsld:
     container: 'library://james-s-santangelo/ngsld/ngsld:1.2.0'
     threads: 4
     params:
-        num_ind = 2090
+        num_ind = 2090,
+        max_kb_dist = 50
     resources:
         mem_mb = lambda wildcards, attempt: attempt * 16000,
         runtime = 1440
@@ -281,8 +282,34 @@ rule ngsld:
             --probs \
             --extend_out \
             --n_threads {threads} \
-            --max_kb_dist 50 | gzip --best > {output} ) 2> {log}
+            --max_kb_dist {params.max_kb_dist} | gzip --best > {output} ) 2> {log}
         """
+
+rule prune_graph:
+    """
+    Prunes SNPs for LD
+    """
+    input:
+        rules.ngsld.output
+    output:
+        pos = f"{NGSLD_DIR}/{{chrom}}_pruned.sites",
+        excl = f"{NGSLD_DIR}/{{chrom}}_excluded.sites"
+    log: f'{LOG_DIR}/prune_graph/{{chrom}}_prunning.log'
+    container: 'library://james-s-santangelo/ngsld/ngsld:1.2.0'
+    threads: 4
+    params:
+        max_r2 = 0.2,
+        max_dist = 50000
+    shell:
+        """
+        prune_graph --in <(zcat {input}) \
+           --weight-field "column_7" \
+           --weight-filter "column_3 <= {params.max_dist} && column_7 >= {params.max_r2}" \
+           --out {output.pos} \
+           --out-excl {output.excl} \
+           --n-threads {threads} 2> {log}
+        """
+
 
 # rule angsd_asso_score:
 #     """
@@ -392,7 +419,7 @@ rule ngsld:
 rule angsd_asso_done:
     input:
         expand(rules.angsd_asso_freq.output, chrom=CHROMOSOMES),
-        expand(rules.ngsld.output, chrom=CHROMOSOMES)
+        expand(rules.prune_graph.output, chrom=CHROMOSOMES)
     output:
         f"{ANGSD_DIR}/angsd_asso.done"
     shell:
