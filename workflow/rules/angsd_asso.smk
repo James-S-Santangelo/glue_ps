@@ -257,6 +257,7 @@ rule create_pos_file_for_ngsLD:
         """
         zcat {input} | tail -n +2 | cut -f1 | sed 's/_/\t/2' > {output}
         """
+
 rule ngsld:
     input:
         pos = rules.create_pos_file_for_ngsLD.output,
@@ -287,7 +288,7 @@ rule ngsld:
 
 rule prune_graph:
     """
-    Prunes SNPs for LD
+    Prune SNPs for LD
     """
     input:
         rules.ngsld.output
@@ -310,6 +311,94 @@ rule prune_graph:
            --n-threads {threads} 2> {log}
         """
 
+rule get_random_pruned_sites:
+    """
+    Randomly select LD-pruned SNPs from each chromosome. Output sites file that matches
+    the marker formatting in Beagle GL files for easy grepping
+    """
+    input:
+        rules.prune_graph.output.pos
+    output:
+        f"{PROGRAM_RESOURCE_DIR}/angsd_sites/{{chrom}}_random_pruned.sites"
+    params:
+        num_sites = 6250
+    shell:
+        """
+        shuf -n {params.num_sites} --random-source=<(yes 42) {input} |\
+            sed 's/:/\t/g' |\
+            sort -k1,1 -k2n |\
+            sed 's/\t/_/g' > {output}
+        """
+
+rule get_random_pruned_site_gls:
+    """
+    Extract GLs for randomly-selected LD-pruned sites for each chromosome
+    """
+    input:
+        sites = rules.get_random_pruned_sites.output,
+        gls = rules.angsd_gls_allSamples.output.gls
+    output:
+        gls = f'{ANGSD_DIR}/gls/allSamples/{{chrom}}/{{chrom}}_randomPruned.beagle.gz',
+    params:
+        tmp = "{chrom}_tmp.out"
+    run:
+        import gzip
+        sites = [x.strip() for x in open(input["sites"][0], "r").readlines()]
+        with open(params["tmp"], "w") as fout:
+            with gzip.open(input["gls"], "rt") as fin:
+                lines = fin.readlines()
+                for l in lines:
+                    if l.startswith("marker"):
+                        fout.write(l)
+                    else:
+                        site = l.split("\t")[0].strip()
+                        if site in sites:
+                            fout.write(l)
+        shell("gzip {params.tmp} && mv {params.tmp}.gz {output}")
+
+rule concat_random_pruned_gls:
+    """
+    Concatenate random chromosomal LD-pruned SNPs into one file
+    """
+    input:
+        expand(rules.get_random_pruned_site_gls.output, chrom=CHROMOSOMES)
+    output:
+        f'{ANGSD_DIR}/gls/allSamples/allChroms_randomPruned.beagle.gz'
+    shell:
+        """
+        first=1
+        for f in {input}; do
+            if [ "$first"  ]; then
+                zcat "$f"
+                first=
+            else
+                zcat "$f"| tail -n +2
+            fi
+        done | gzip -c > {output}
+        """
+
+rule pcangsd:
+    """
+    Perform PCA using 100K randomly selected LD-pruned SNPs
+    """
+    input:
+        rules.concat_random_pruned_gls.output
+    output:
+        f'{PCANGSD_DIR}/pcangsd.cov'
+    log: f'{LOG_DIR}/pcangsd/pcangsd.log'
+    container: 'library://james-s-santangelo/pcangsd/pcangsd:1.2'
+    threads: 10
+    params:
+        out = f'{PCANGSD_DIR}/pcangsd'
+    shell:
+        """
+        pcangsd \
+            --beagle {input} \
+            --threads {threads} \
+            --out {params.out} \
+            --iter 10000 \
+            --pi_save &> {log}
+        """
 
 # rule angsd_asso_score:
 #     """
@@ -419,7 +508,7 @@ rule prune_graph:
 rule angsd_asso_done:
     input:
         expand(rules.angsd_asso_freq.output, chrom=CHROMOSOMES),
-        expand(rules.prune_graph.output, chrom=CHROMOSOMES)
+        rules.pcangsd.output
     output:
         f"{ANGSD_DIR}/angsd_asso.done"
     shell:

@@ -32,6 +32,7 @@ PROGRAM_RESOURCE_DIR = f"{config['results_prefix']}/program_resources"
 ANGSD_DIR = f"{config['results_prefix']}/angsd"
 NGSPARALOG_DIR = f"{config['results_prefix']}/ngsparalog"
 NGSLD_DIR = f"{config['results_prefix']}/ngsld"
+PCANGSD_DIR = f"{config['results_prefix']}/pcangsd"
 ANALYSIS_DIR = f"{config['results_prefix']}/analyses"
 
 wildcard_constraints:
