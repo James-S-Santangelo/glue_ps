@@ -85,6 +85,8 @@ rule ngsparalog:
         out = f"{NGSPARALOG_DIR}/{{chrom}}_ngsparalog.txt"
     log: f"{LOG_DIR}/ngsparalog/{{chrom}}_ngsparalog.log"
     container: "/home/santang3/singularity_containers/ngsparalog.sif"
+    params:
+        min_ind = 1045
     shell:
         """
         ( samtools mpileup -b {input.bams} \
@@ -93,7 +95,7 @@ rule ngsparalog:
             -q 0 -Q 0 --ff UNMAP,DUP |\
             ngsParalog calcLR \
                 -infile - \
-                -minQ 20 -minind 1045, -mincov 1 \
+                -minQ 20 -minind {params.min_ind} -mincov 1 \
                 -outfile {output} ) 2> {log}
         """
 
@@ -242,6 +244,45 @@ rule angsd_gls_allSamples:
             -bam {input.bams} 2> {log}
         """
 
+##############################
+#### POPULATION STRUCTURE ####
+##############################
+
+rule create_pos_file_for_ngsLD:
+    input:
+        rules.angsd_gls_allSamples.output.gls
+    output:
+        f'{PROGRAM_RESOURCE_DIR}/ngsld/{{chrom}}.pos'
+    shell:
+        """
+        zcat {input} | tail -n +2 | cut -f1 | sed 's/_/\t/2' > {output}
+        """
+rule ngsld:
+    input:
+        pos = rules.create_pos_file_for_ngsLD.output,
+        gls = rules.angsd_gls_allSamples.output.gls
+    output:
+        f'{NGSLD_DIR}/{{chrom}}.ld.gz'
+    log: f'{LOG_DIR}/ngsld/{{chrom}}_ngsld.log'
+    container: 'library://james-s-santangelo/ngsld/ngsld:1.2.0'
+    threads: 4
+    params:
+        num_ind = 2090
+    resources:
+        mem_mb = lambda wildcards, attempt: attempt * 16000,
+        runtime = 1440
+    shell:
+        """
+        ( NUM_SITES=$(cat {input.pos} | wc -l) &&
+          ngsLD --geno {input.gls} \
+            --pos {input.pos} \
+            --n_ind {params.num_ind} \
+            --n_sites $NUM_SITES \
+            --probs \
+            --extend_out \
+            --n_threads {threads} \
+            --max_kb_dist 50 | gzip --best > {output} ) 2> {log}
+        """
 
 # rule angsd_asso_score:
 #     """
@@ -351,7 +392,7 @@ rule angsd_gls_allSamples:
 rule angsd_asso_done:
     input:
         expand(rules.angsd_asso_freq.output, chrom=CHROMOSOMES),
-        expand(rules.angsd_gls_allSamples.output, chrom=CHROMOSOMES)
+        expand(rules.ngsld.output, chrom=CHROMOSOMES)
     output:
         f"{ANGSD_DIR}/angsd_asso.done"
     shell:
