@@ -66,6 +66,5 @@ rule all:
 include: 'rules/ref.smk'
 include: 'rules/angsd_fst_thetas_byCity.smk'
 include: 'rules/angsd_asso.smk'
-include: 'rules/angsd_alleleCounts_byCity_byHabitat.smk'
 include: 'rules/baypass.smk'
 include: 'rules/picmin.smk'

@@ -1,13 +1,50 @@
-###############
-#### SETUP ####
-###############
+############################################
+#### ALLELE COUNTS PER-CITY PER-HABITAT ####
+############################################
+
+rule angsd_alleleCounts_byCity_byHabitat:
+    input:
+        bams = rules.create_bam_list_byHabitat_allSites.output,
+        sites = lambda w: [x for x in rules.identify_paralogous_snps.output.sites if w.chrom in x],
+        ref = rules.copy_ref.output,
+        ref_idx = rules.samtools_index_ref.output
+    output:
+        mafs = f'{ANGSD_DIR}/snps/byCity/{{city}}/{{chrom}}/{{city}}_{{habitat}}_{{chrom}}_snps.mafs.gz',
+        pos = f'{ANGSD_DIR}/snps/byCity/{{city}}/{{chrom}}/{{city}}_{{habitat}}_{{chrom}}_snps.pos.gz',
+        counts = f'{ANGSD_DIR}/snps/byCity/{{city}}/{{chrom}}/{{city}}_{{habitat}}_{{chrom}}_snps.counts.gz',
+    log: LOG_DIR + '/angsd_alleleCounts_byCity_byHabitat/{city}/{chrom}_{habitat}_byCity_snps.log'
+    container: 'library://james-s-santangelo/angsd/angsd:0.938'
+    params:
+        out = f'{ANGSD_DIR}/snps/byCity/{{city}}/{{chrom}}/{{city}}_{{habitat}}_{{chrom}}_snps'
+    threads: 2
+    resources:
+        mem_mb = lambda wildcards, attempt: attempt * 4000,
+        runtime = lambda wildcards, attempt: attempt * 60
+    shell:
+        """
+        angsd -GL 1 \
+            -out {params.out} \
+            -nThreads {threads} \
+            -doMajorMinor 4 \
+            -baq 2 \
+            -ref {input.ref} \
+            -doCounts 1 \
+            -dumpCounts 3 \
+            -doMaf 1 \
+            -minQ 20 \
+            -minMapQ 30 \
+            -sites {input.sites} \
+            -anc {input.ref} \
+            -r {wildcards.chrom} \
+            -bam {input.bams} 2> {log}
+        """
 
 rule create_alleleCount_files_byCity:
     input:
         perCity_mafs = expand(rules.angsd_alleleCounts_byCity_byHabitat.output.mafs, city=CITIES, chrom=CHROMOSOMES, habitat=HABITATS),
         perCity_bams = expand(rules.create_bam_list_byHabitat_allSites.output, city=CITIES, habitat=HABITATS),
-        global_mafs = expand(rules.angsd_snp_af_allSamples.output.mafs, chrom=CHROMOSOMES),
-        global_sites = expand(rules.extract_and_index_af_allSamples_sites.output.sites, chrom=CHROMOSOMES),
+        global_mafs = expand(rules.angsd_snps_allSamples.output.mafs, chrom=CHROMOSOMES),
+        global_sites = expand(rules.identify_paralogous_snps.output.sites, chrom=CHROMOSOMES),
         pos = lambda w: expand(rules.angsd_alleleCounts_byCity_byHabitat.output.pos, city=CITIES, chrom=CHROMOSOMES, habitat=HABITATS),
         counts = lambda w: expand(rules.angsd_alleleCounts_byCity_byHabitat.output.counts, city=CITIES, chrom=CHROMOSOMES, habitat=HABITATS),
     output:
@@ -21,7 +58,7 @@ rule create_alleleCount_files_byCity:
         mem_mb = lambda wildcards, attempt: attempt * 40000,
         runtime = lambda wildcards, attempt: attempt * 60 
     params:
-        maf_prefix = f"{ANGSD_DIR}/maf",
+        maf_prefix = f"{ANGSD_DIR}/snps",
         out_prefix = f"{PROGRAM_RESOURCE_DIR}/baypass/allSites",
         cities = CITIES,
         habitats = HABITATS,
@@ -108,7 +145,7 @@ rule baypass_coreModel_allSamples:
 
 rule fmd_and_omega_mat_pca:
     input:
-        omega_mat = expand(rules.baypass_coreModel_allSamples.output.omega_mat, n=BAYPASS_SPLITS, k=[1,2,3])
+        omega_mat = expand(rules.baypass_coreModel_allSamples.output.omega_mat, n=BAYPASS_SPLITS, k=[1])
     output:
         fmd_box = f"{ANALYSIS_DIR}/baypass/figures/fmd_boxplot.pdf",
         pca = f"{ANALYSIS_DIR}/baypass/figures/pca_by_continent_and_habitat.pdf",
@@ -143,7 +180,7 @@ rule baypass_done:
         # expand(rules.generate_windowed_c2_byCity.output, city=CITIES),
         # rules.fmd_and_omega_mat_pca.output,
         # rules.baypass_outlier_test.output,
-        expand(rules.baypass_coreModel_allSamples.output, city=CITIES, n=BAYPASS_SPLITS, k=[1,2,3]),
+        expand(rules.baypass_coreModel_allSamples.output, city=CITIES, n=BAYPASS_SPLITS, k=[1]),
     output:
         f"{BAYPASS_DIR}/baypass.done"
     shell:
