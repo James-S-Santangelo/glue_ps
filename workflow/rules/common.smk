@@ -17,18 +17,3 @@ def get_baypass_coreModel_input_geno(wildcards):
         if n == wildcards.n:
             geno.append(geno_file)
     return geno
-
-def get_baypass_coreModel_byCity_input(wildcards):
-    all_geno_files = rules.split_baypass_global_input_files.output.perCity_geno
-    all_cont_files = rules.create_alleleCount_files_byCity.output.perCity_cont
-    all_pool_files = rules.create_alleleCount_files_byCity.output.perCity_pool
-    geno = []
-    for geno_file in all_geno_files:
-        base = os.path.basename(geno_file)
-        city = re.search("(.*)(?=_\\d+\\.geno)", base).group(1) 
-        n = re.search("(\\d+)(?=\\.geno)", base).group(1)
-        if n == wildcards.n and city == wildcards.city:
-            geno.append(geno_file)
-    cont = [f for f in all_cont_files if wildcards.city in os.path.basename(f)]
-    pool = [f for f in all_pool_files if wildcards.city in os.path.basename(f)]
-    return {"geno": geno, "cont": cont, "pool": pool}

@@ -102,38 +102,6 @@ rule baypass_coreModel_allSamples:
             -nthreads {threads} 2> {log}
         """
 
-rule baypass_coreModel_byCity:
-    input:
-        unpack(get_baypass_coreModel_byCity_input)
-    output:
-        log = f"{BAYPASS_DIR}/coreModel_byCity/{{city}}/split{{n}}/{{city}}_split{{n}}_baypass.log",
-        dic = f"{BAYPASS_DIR}/coreModel_byCity/{{city}}/split{{n}}/{{city}}_split{{n}}_DIC.out",
-        omega_mat = f"{BAYPASS_DIR}/coreModel_byCity/{{city}}/split{{n}}/{{city}}_split{{n}}_mat_omega.out",
-        beta_sum = f"{BAYPASS_DIR}/coreModel_byCity/{{city}}/split{{n}}/{{city}}_split{{n}}_summary_beta_params.out",
-        omega_lda = f"{BAYPASS_DIR}/coreModel_byCity/{{city}}/split{{n}}/{{city}}_split{{n}}_summary_lda_omega.out",
-        pif_sum = f"{BAYPASS_DIR}/coreModel_byCity/{{city}}/split{{n}}/{{city}}_split{{n}}_summary_yij_pij.out",
-        pi_xtx = f"{BAYPASS_DIR}/coreModel_byCity/{{city}}/split{{n}}/{{city}}_split{{n}}_summary_pi_xtx.out",
-        cont_out = f"{BAYPASS_DIR}/coreModel_byCity/{{city}}/split{{n}}/{{city}}_split{{n}}_summary_contrast.out",
-        bf_out = f"{BAYPASS_DIR}/coreModel_byCity/{{city}}/split{{n}}/{{city}}_split{{n}}_summary_betai_reg.out"
-    log: f"{LOG_DIR}/baypass/coreModel_byCity/{{city}}/{{city}}_split{{n}}.log"
-    container: "library://james-s-santangelo/baypass/baypass:2.41"
-    threads: 4
-    resources:
-        mem_mb = lambda wildcards, attempt: attempt * 2000,
-        runtime = lambda wildcards, attempt: attempt * 240
-    params:
-        out_prefix = f"{BAYPASS_DIR}/coreModel_byCity/{{city}}/split{{n}}/{{city}}_split{{n}}"
-    shell:
-        """
-        baypass -gfile {input.geno} \
-            -outprefix {params.out_prefix} \
-            -seed 1 \
-            -contrastfile {input.cont} \
-            -efile {input.cont} \
-            -poolsizefile {input.pool} \
-            -nthreads {threads} 2> {log}
-        """
-
 ##################
 #### ANALYSES ####
 ##################
@@ -150,16 +118,6 @@ rule fmd_and_omega_mat_pca:
         habitats = HABITATS,
     notebook:
         "../notebooks/fmd_and_omega_mat_pca.r.ipynb"
-
-rule generate_windowed_c2_byCity:
-    input:
-        c2 = lambda w: expand(rules.baypass_coreModel_byCity.output.cont_out, city=w.city, n=BAYPASS_SPLITS),
-        site_order = expand(rules.split_baypass_global_input_files.output.site_order, n=BAYPASS_SPLITS)
-    output:
-        win_c2 = f"{ANALYSIS_DIR}/baypass/windowed_c2/{{city}}_windowed_c2.txt"
-    conda: "../envs/baypass.yaml"
-    script:
-        "../scripts/r/generate_windowed_c2_byCity.R"
 
 rule baypass_outlier_test:
     input:
@@ -186,7 +144,6 @@ rule baypass_done:
         # rules.fmd_and_omega_mat_pca.output,
         # rules.baypass_outlier_test.output,
         expand(rules.baypass_coreModel_allSamples.output, city=CITIES, n=BAYPASS_SPLITS, k=[1,2,3]),
-        expand(rules.baypass_coreModel_byCity.output, city=CITIES, n=BAYPASS_SPLITS)
     output:
         f"{BAYPASS_DIR}/baypass.done"
     shell:
