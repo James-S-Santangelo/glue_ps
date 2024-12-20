@@ -155,7 +155,8 @@ rule angsd_asso_freq:
         bams = rules.create_bam_list_allSamples_allSites.output,
         ref = rules.copy_ref.output,
         ref_idx = rules.samtools_index_ref.output,
-        sites = lambda w: [x for x in rules.identify_paralogous_snps.output.sites if w.chrom in x]
+        sites = lambda w: [x for x in rules.identify_paralogous_snps.output.sites if w.chrom in x],
+        sites_idx = rules.index_filtered_snps.output
     output:
         asso = f'{ANGSD_DIR}/asso/allSamples/{{chrom}}/{{chrom}}_allSamples_freq.lrt0.gz'
     log: f"{LOG_DIR}/angsd_asso/{{chrom}}_angsd_asso_freq.log"
@@ -400,99 +401,77 @@ rule pcangsd:
             --pi_save &> {log}
         """
 
-# rule angsd_asso_score:
-#     """
-#     Perform association analysis in ANGSD with binary variable (Urban vs. Rural)
-#     """
-#     input:
-#         ybin = rules.create_angsd_asso_ybin_file.output,
-#         bams = rules.create_bam_list_allSamples_allSites.output,
-#         ref = rules.copy_ref.output,
-#         ref_idx = rules.samtools_index_ref.output
-#     output:
-#         asso = f'{ANGSD_DIR}/asso/allSamples/{{chrom}}/{{chrom}}_allSamples_asso_score.lrt0.gz'
-#     log: f"{LOG_DIR}/angsd_asso/{{chrom}}_angsd_asso_score.log"
-#     container: 'library://james-s-santangelo/angsd/angsd:0.938'
-#     params:
-#         out = f'{ANGSD_DIR}/asso/allSamples/{{chrom}}/{{chrom}}_allSamples_asso_score'
-#     threads: 8
-#     resources:
-#         mem_mb = lambda wildcards, attempt: attempt * 80000,
-#         runtime = 1440
-#     shell:
-#         """
-#         NUM_IND=$( wc -l < {input.bams} );
-#         MIN_IND=$(( NUM_IND*50/100 ));
-#         MAX_DEPTH=$(( NUM_IND*1*2 ));
-#         angsd -GL 1 \
-#             -out {params.out} \
-#             -nThreads {threads} \
-#             -doMajorMinor 1 \
-#             -SNP_pval 1e-6 \
-#             -doMaf 1 \
-#             -minMaf 0.05 \
-#             -baq 2 \
-#             -ref {input.ref} \
-#             -doCounts 1 \
-#             -setMinDepthInd 1 \
-#             -minInd $MIN_IND \
-#             -setMaxDepth $MAX_DEPTH \
-#             -minQ 20 \
-#             -minMapQ 30 \
-#             -doAsso 2 \
-#             -Pvalue 1 \
-#             -yBin {input.ybin} \
-#             -doPost 1 \
-#             -r {wildcards.chrom} \
-#             -bam {input.bams} 2> {log}
-#         """
+rule plot_pca_and_generate_covariance_file:
+    input:
+        mat = rules.pcangsd.output,
+        bams = rules.create_bam_list_allSamples_allSites.output,
+    output:
+        scree = f"{ANALYSIS_DIR}/pcangsd/figures/pca_scree.pdf",
+        all_pca = f"{ANALYSIS_DIR}/pcangsd/figures/pca_allSamples.pdf",
+        nam_pca = f"{ANALYSIS_DIR}/pcangsd/figures/pca_nam.pdf",
+        asi_pca = f"{ANALYSIS_DIR}/pcangsd/figures/pca_asi.pdf",
+        oce_pca = f"{ANALYSIS_DIR}/pcangsd/figures/pca_oce.pdf",
+        afr_pca = f"{ANALYSIS_DIR}/pcangsd/figures/pca_afr.pdf",
+        eu_pca = f"{ANALYSIS_DIR}/pcangsd/figures/pca_eu.pdf",
+        sam_pca = f"{ANALYSIS_DIR}/pcangsd/figures/pca_sam.pdf",
+        cov_file = f"{PROGRAM_RESOURCE_DIR}/angsd_pc_axes.cov"
+    conda: "../envs/r.yaml"
+    notebook:
+        "../notebooks/plot_pca_and_generate_covariance_file.r.ipynb"
 
-# rule angsd_asso_lg:
-#     """
-#     Perform association analysis in ANGSD with binary variable (Urban vs. Rural)
-#     """
-#     input:
-#         ybin = rules.create_angsd_asso_ybin_file.output,
-#         bams = rules.create_bam_list_allSamples_allSites.output,
-#         ref = rules.copy_ref.output,
-#         ref_idx = rules.samtools_index_ref.output
-#     output:
-#         asso = f'{ANGSD_DIR}/asso/allSamples/{{chrom}}/{{chrom}}_allSamples_asso_lg.lrt0.gz'
-#     log: f"{LOG_DIR}/angsd_asso/{{chrom}}_angsd_asso_lg.log"
-#     container: 'library://james-s-santangelo/angsd/angsd:0.938'
-#     params:
-#         out = f'{ANGSD_DIR}/asso/allSamples/{{chrom}}/{{chrom}}_allSamples_asso_lg'
-#     threads: 8
-#     resources:
-#         mem_mb = lambda wildcards, attempt: attempt * 80000,
-#         runtime = 1440
-#     shell:
-#         """
-#         NUM_IND=$( wc -l < {input.bams} );
-#         MIN_IND=$(( NUM_IND*50/100 ));
-#         MAX_DEPTH=$(( NUM_IND*1*2 ));
-#         angsd -GL 1 \
-#             -out {params.out} \
-#             -nThreads {threads} \
-#             -doMajorMinor 1 \
-#             -SNP_pval 1e-6 \
-#             -doMaf 1 \
-#             -minMaf 0.05 \
-#             -baq 2 \
-#             -ref {input.ref} \
-#             -doCounts 1 \
-#             -setMinDepthInd 1 \
-#             -minInd $MIN_IND \
-#             -setMaxDepth $MAX_DEPTH \
-#             -minQ 20 \
-#             -minMapQ 30 \
-#             -doAsso 4 \
-#             -Pvalue 1 \
-#             -yBin {input.ybin} \
-#             -doPost 1 \
-#             -r {wildcards.chrom} \
-#             -bam {input.bams} 2> {log}
-#         """
+rule angsd_asso_score:
+    """
+    Perform association analysis in ANGSD with binary variable (Urban vs. Rural)
+    """
+    input:
+        ybin = rules.create_angsd_asso_ybin_file.output,
+        bams = rules.create_bam_list_allSamples_allSites.output,
+        ref = rules.copy_ref.output,
+        ref_idx = rules.samtools_index_ref.output,
+        cov_file = rules.plot_pca_and_generate_covariance_file.output.cov_file, 
+        sites = lambda w: [x for x in rules.identify_paralogous_snps.output.sites if w.chrom in x],
+        sites_idx = rules.index_filtered_snps.output
+    output:
+        asso = f'{ANGSD_DIR}/asso/allSamples/{{chrom}}/{{chrom}}_allSamples_asso_score.lrt0.gz'
+    log: f"{LOG_DIR}/angsd_asso/{{chrom}}_angsd_asso_score.log"
+    container: 'library://james-s-santangelo/angsd/angsd:0.938'
+    params:
+        max_depth = 5225, # Num samples x Mean coverage x 2
+        min_ind = 1045, # 50% of Num samples
+        out = f'{ANGSD_DIR}/asso/allSamples/{{chrom}}/{{chrom}}_allSamples_asso_score'
+    threads: 4
+    resources:
+        mem_mb = lambda wildcards, attempt: attempt * 80000,
+        runtime = 1440
+    shell:
+        """
+        angsd -GL 1 \
+            -out {params.out} \
+            -nThreads {threads} \
+            -doMajorMinor 1 \
+            -doMaf 1 \
+            -baq 2 \
+            -ref {input.ref} \
+            -doCounts 1 \
+            -setMinDepthInd 1 \
+            -minInd {params.min_ind} \
+            -setMaxDepth {params.max_depth} \
+            -minQ 20 \
+            -minMapQ 30 \
+            -remove_bads 1 \
+            -skipTriallelic 1 \
+            -uniqueOnly 1 \
+            -only_proper_pairs 1 \
+            -minHigh 30 \
+            -doAsso 2 \
+            -Pvalue 1 \
+            -yBin {input.ybin} \
+            -cov {input.cov_file} \
+            -doPost 1 \
+            -r {wildcards.chrom} \
+            -sites {input.sites} \
+            -bam {input.bams} 2> {log}
+        """
 
 # rule analyze_angsd_asso:
 #     input:
@@ -508,7 +487,7 @@ rule pcangsd:
 rule angsd_asso_done:
     input:
         expand(rules.angsd_asso_freq.output, chrom=CHROMOSOMES),
-        rules.pcangsd.output
+        expand(rules.angsd_asso_score.output, chrom=CHROMOSOMES)
     output:
         f"{ANGSD_DIR}/angsd_asso.done"
     shell:

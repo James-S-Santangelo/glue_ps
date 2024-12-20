@@ -2,7 +2,7 @@
 samples: ../resources/glue_ps_sampleSheet.txt
 chromosomes: ../resources/chromosome_file.txt
 ref: /research/references/trifolium/repens/UTM_Trep_v1.0/UTM_Trep_v1.0_haploid_reference_softMasked.fasta
-bams: /node1nfs/archive/projects/GLUE/dnaSeqQC_v2/results/bam 
+bams: /node1nfs/archive/projects/trifolium/GLUE/dnaSeqQC_v2/results/bam 
 
 # Outputs
 results_prefix: /research/projects/trifolium/glue/glue_ps/results
