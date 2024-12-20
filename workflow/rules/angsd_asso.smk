@@ -476,7 +476,6 @@ rule angsd_asso_score:
 # rule analyze_angsd_asso:
 #     input:
 #         expand(rules.angsd_asso_freq.output, chrom=CHROMOSOMES[0]),
-#         expand(rules.angsd_asso_lg.output, chrom=CHROMOSOMES[0]),
 #         expand(rules.angsd_asso_score.output, chrom=CHROMOSOMES[0])
 #     output:
 #         "test.txt"
