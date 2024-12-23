@@ -46,8 +46,8 @@ rule create_alleleCount_files_byCity:
         perCity_bams = expand(rules.create_bam_list_byHabitat_allSites.output, city=CITIES, habitat=HABITATS),
         global_mafs = expand(rules.angsd_snps_allSamples.output.mafs, chrom=CHROMOSOMES),
         global_sites = expand(rules.identify_paralogous_snps.output.sites, chrom=CHROMOSOMES),
-        pos = lambda w: expand(rules.angsd_alleleCounts_byCity_byHabitat.output.pos, city=CITIES, chrom=CHROMOSOMES, habitat=HABITATS),
-        counts = lambda w: expand(rules.angsd_alleleCounts_byCity_byHabitat.output.counts, city=CITIES, chrom=CHROMOSOMES, habitat=HABITATS),
+        pos = expand(rules.angsd_alleleCounts_byCity_byHabitat.output.pos, city=CITIES, chrom=CHROMOSOMES, habitat=HABITATS),
+        counts = expand(rules.angsd_alleleCounts_byCity_byHabitat.output.counts, city=CITIES, chrom=CHROMOSOMES, habitat=HABITATS),
     output:
         perCity_geno = expand(f"{PROGRAM_RESOURCE_DIR}/baypass/allSites/{{city}}/{{city}}.geno", city=CITIES),
         perCity_cont = expand(f"{PROGRAM_RESOURCE_DIR}/baypass/allSites/{{city}}/{{city}}.cf", city=CITIES),
