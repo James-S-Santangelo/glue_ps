@@ -90,12 +90,12 @@ rule split_baypass_global_input_files:
         site_order = rules.create_alleleCount_files_byCity.output.site_order,
         perCity_geno = expand(rules.create_alleleCount_files_byCity.output.perCity_geno, city=CITIES)
     output:
-        as_geno = expand(f"{PROGRAM_RESOURCE_DIR}/baypass/split_files/allSamples/splits/allSamples_{{n}}.geno", n=BAYPASS_SPLITS),
-        site_order = expand(f"{PROGRAM_RESOURCE_DIR}/baypass/split_files/allSamples/site_order/site_order_{{n}}.txt", n=BAYPASS_SPLITS),
-        perCity_geno = expand(f"{PROGRAM_RESOURCE_DIR}/baypass/split_files/byCity/{{city}}/{{city}}_{{n}}.geno", city=CITIES, n=BAYPASS_SPLITS)
+        as_geno = expand(f"{PROGRAM_RESOURCE_DIR}/baypass/splitSites/allSamples/splits/allSamples_{{n}}.geno", n=BAYPASS_SPLITS),
+        site_order = expand(f"{PROGRAM_RESOURCE_DIR}/baypass/splitSites/allSamples/site_order/site_order_{{n}}.txt", n=BAYPASS_SPLITS),
+        perCity_geno = expand(f"{PROGRAM_RESOURCE_DIR}/baypass/splitSites/byCity/{{city}}/{{city}}_{{n}}.geno", city=CITIES, n=BAYPASS_SPLITS)
     conda: "../envs/baypass.yaml"
     params:
-        out_prefix = f"{PROGRAM_RESOURCE_DIR}/baypass/split_files",
+        out_prefix = f"{PROGRAM_RESOURCE_DIR}/baypass/splitSites",
         in_prefix = f"{PROGRAM_RESOURCE_DIR}/baypass/allSites",
         cities = CITIES,
         splits = BAYPASS_SPLITS
