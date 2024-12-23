@@ -6,6 +6,7 @@ rule angsd_alleleCounts_byCity_byHabitat:
     input:
         bams = rules.create_bam_list_byHabitat_allSites.output,
         sites = lambda w: [x for x in rules.identify_paralogous_snps.output.sites if w.chrom in x],
+        sites_idx = rules.index_filtered_snps.output,
         ref = rules.copy_ref.output,
         ref_idx = rules.samtools_index_ref.output
     output:
