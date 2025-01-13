@@ -190,18 +190,17 @@ rule baypass_coreModel_allSamples:
 #### ANALYSES ####
 ##################
 
-# rule fmd_and_omega_mat_pca:
-#     input:
-#         omega_mat = expand(rules.baypass_coreModel_allSamples.output.omega_mat, n=BAYPASS_SPLITS, k=[42])
-#     output:
-#         fmd_box = f"{ANALYSIS_DIR}/baypass/figures/fmd_boxplot.pdf",
-#         pca = f"{ANALYSIS_DIR}/baypass/figures/pca_by_continent_and_habitat.pdf",
-#     conda: "../envs/baypass.yaml"
-#     params:
-#         cities = CITIES,
-#         habitats = HABITATS,
-#     notebook:
-#         "../notebooks/fmd_and_omega_mat_pca.r.ipynb"
+rule fmd_and_omega_mat_pca:
+    input:
+        omega_mat = rules.baypass_coreModel_random100K.output.omega_mat
+    output:
+        pca = f"{ANALYSIS_DIR}/baypass/figures/pca_by_continent_and_habitat.pdf",
+    conda: "../envs/baypass.yaml"
+    params:
+        cities = CITIES,
+        habitats = HABITATS,
+    notebook:
+        "../notebooks/fmd_and_omega_mat_pca.r.ipynb"
 
 rule baypass_outlier_test:
     input:
@@ -225,7 +224,7 @@ rule baypass_outlier_test:
 rule baypass_done:
     input:
         # expand(rules.generate_windowed_c2_byCity.output, city=CITIES),
-        # rules.fmd_and_omega_mat_pca.output,
+        rules.fmd_and_omega_mat_pca.output,
         # rules.baypass_outlier_test.output,
         expand(rules.baypass_coreModel_allSamples.output, city=CITIES, n=BAYPASS_SPLITS, k=[42]),
     output:
