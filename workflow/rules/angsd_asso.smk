@@ -473,20 +473,26 @@ rule angsd_asso_score:
             -bam {input.bams} 2> {log}
         """
 
-# rule analyze_angsd_asso:
-#     input:
-#         expand(rules.angsd_asso_freq.output, chrom=CHROMOSOMES[0]),
-#         expand(rules.angsd_asso_score.output, chrom=CHROMOSOMES[0])
-#     output:
-#         "test.txt"
-#     conda: "../envs/r.yaml"
-#     notebook:
-#         "../notebooks/analyze_angsd_asso.r.ipynb"
+rule analyze_angsd_asso:
+    input:
+        freq = expand(rules.angsd_asso_freq.output, chrom=CHROMOSOMES),
+        score = expand(rules.angsd_asso_score.output, chrom=CHROMOSOMES)
+    output:
+        freq_pval_hist = f"{ANALYSIS_DIR}/angsd_asso/figures/angsd_asso_freq_pval_hist.pdf",
+        freq_pval_qq = f"{ANALYSIS_DIR}/angsd_asso/figures/angsd_asso_freq_qq.pdf",
+        freq_outliers = f"{ANALYSIS_DIR}/angsd_asso/figures/angsd_asso_freq_outliers.txt",
+        freq_manhat = f"{ANALYSIS_DIR}/angsd_asso/figures/angsd_asso_freq_manhat.pdf",
+        score_pval_hist = f"{ANALYSIS_DIR}/angsd_asso/figures/angsd_asso_score_pval_hist.pdf",
+        score_pval_qq = f"{ANALYSIS_DIR}/angsd_asso/figures/angsd_asso_score_qq.pdf",
+        score_outliers = f"{ANALYSIS_DIR}/angsd_asso/figures/angsd_asso_score_outliers.txt",
+        score_manhat = f"{ANALYSIS_DIR}/angsd_asso/figures/angsd_asso_score_manhat.pdf",
+    conda: "../envs/r.yaml"
+    notebook:
+        "../notebooks/analyze_angsd_asso.r.ipynb"
 
 rule angsd_asso_done:
     input:
-        expand(rules.angsd_asso_freq.output, chrom=CHROMOSOMES),
-        expand(rules.angsd_asso_score.output, chrom=CHROMOSOMES)
+        rules.analyze_angsd_asso.output
     output:
         f"{ANGSD_DIR}/angsd_asso.done"
     shell:

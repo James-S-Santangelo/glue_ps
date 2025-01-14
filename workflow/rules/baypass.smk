@@ -207,7 +207,6 @@ rule baypass_outlier_test:
         cont_out = expand(rules.baypass_coreModel_allSamples.output.cont_out, n=BAYPASS_SPLITS, k=[42]),
         site_order = expand(rules.split_baypass_global_input_files.output.site_order, n=BAYPASS_SPLITS),
     output:
-        "test.txt",
         c2_outliers = f"{ANALYSIS_DIR}/baypass/baypass_c2_outliers.txt",
         c2_pval_hist = f"{ANALYSIS_DIR}/baypass/figures/baypass_c2_pval_hist.pdf",
         c2_manhat_pdf = f"{ANALYSIS_DIR}/baypass/figures/baypass_c2_manhattan.pdf",
