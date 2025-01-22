@@ -158,13 +158,13 @@ rule angsd_asso_freq:
         sites = lambda w: [x for x in rules.identify_paralogous_snps.output.sites if w.chrom in x],
         sites_idx = rules.index_filtered_snps.output
     output:
-        asso = f'{ANGSD_DIR}/asso/allSamples/{{chrom}}/{{chrom}}_allSamples_freq.lrt0.gz'
+        asso = f'{ANGSD_DIR}/asso/allSamples/{{chrom}}/{{chrom}}_allSamples_asso_freq.lrt0.gz'
     log: f"{LOG_DIR}/angsd_asso/{{chrom}}_angsd_asso_freq.log"
     container: 'library://james-s-santangelo/angsd/angsd:0.938'
     params:
         max_depth = 5225, # Num samples x Mean coverage x 2
         min_ind = 1045, # 50% of Num samples
-        out = f'{ANGSD_DIR}/asso/allSamples/{{chrom}}/{{chrom}}_allSamples_freq'
+        out = f'{ANGSD_DIR}/asso/allSamples/{{chrom}}/{{chrom}}_allSamples_asso_freq'
     threads: 4
     resources:
         mem_mb = lambda wildcards, attempt: attempt * 16000,
