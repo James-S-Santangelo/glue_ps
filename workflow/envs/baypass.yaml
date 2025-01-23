@@ -4,9 +4,7 @@ channels:
 dependencies:
   - python
   - tqdm
-  - r-base
-  - r-tidyverse
-  - r-irkernel
-  - r-geigen
-  - r-factoextra
   - jupyter
+  - pandas
+  - scipy
+  - numpy

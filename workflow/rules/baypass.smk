@@ -155,6 +155,25 @@ rule create_wza_input_files:
     notebook:
         "../notebooks/create_wza_input_files.r.ipynb"
 
+rule run_wza:
+    input:
+        cor = rules.create_wza_input_files.output.wza_input
+    output:
+        f"{BAYPASS_DIR}/wza_byCity/{{city}}_wza.txt"
+    log: f"{LOG_DIR}/wza/{{city}}_wza.log"
+    conda: "../envs/baypass.yaml"
+    shell:
+        """
+        python3 scripts/python/general_WZA_script.py \
+            --correlations {input.cor} \
+            --summary_stat C2_pval \
+            --window win \
+            --MAF mean_maf \
+            --output {output} \
+            --sep "\t" \
+            --verbose 2> {log}
+        """
+
 ##################
 #### ANALYSES ####
 ##################
@@ -197,7 +216,7 @@ rule baypass_done:
         # expand(rules.generate_windowed_c2_byCity.output, city=CITIES),
         # rules.fmd_and_omega_mat_pca.output,
         # rules.baypass_outlier_test.output,
-        expand(rules.create_wza_input_files.output, city=CITIES),
+        expand(rules.run_wza.output, city=CITIES),
         expand(rules.baypass_coreModel_byCity.output, city=CITIES, n=BAYPASS_SPLITS, k=[42]),
     output:
         f"{BAYPASS_DIR}/baypass.done"
