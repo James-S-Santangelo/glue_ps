@@ -153,20 +153,22 @@ rule baypass_coreModel_byCity:
 #     notebook:
 #         "../notebooks/fmd_and_omega_mat_pca.r.ipynb"
 
-# rule baypass_outlier_test:
-#     input:
-#         cont_out = expand(rules.baypass_coreModel_allSamples.output.cont_out, n=BAYPASS_SPLITS, k=[42]),
-#         site_order = expand(rules.split_baypass_global_input_files.output.site_order, n=BAYPASS_SPLITS),
-#     output:
-#         c2_outliers = f"{ANALYSIS_DIR}/baypass/baypass_c2_outliers.txt",
-#         c2_pval_hist = f"{ANALYSIS_DIR}/baypass/figures/baypass_c2_pval_hist.pdf",
-#         c2_manhat_pdf = f"{ANALYSIS_DIR}/baypass/figures/baypass_c2_manhattan.pdf",
-#         c2_manhat_png = f"{ANALYSIS_DIR}/baypass/figures/baypass_c2_manhattan.png"
-#     params:
-#         qval_cut = 0.05
-#     conda: "../envs/baypass.yaml"
-#     notebook:
-#         "../notebooks/baypass_outlier_test.r.ipynb"
+rule baypass_outlier_test:
+    input:
+        cont_out = expand(rules.baypass_coreModel_byCity.output.cont_out, n=BAYPASS_SPLITS, city=CITIES, k=[42]),
+        pi_xtx = expand(rules.baypass_coreModel_byCity.output.pi_xtx, n = BAYPASS_SPLITS, city=CITIES, k=[42]),
+        site_order = expand(rules.split_baypass_global_input_files.output.site_order, n=BAYPASS_SPLITS),
+    output:
+        "test.txt",
+        c2_outliers = f"{ANALYSIS_DIR}/baypass/baypass_c2_outliers.txt",
+        c2_pval_hist = f"{ANALYSIS_DIR}/baypass/figures/baypass_c2_pval_hist.pdf",
+        c2_manhat_pdf = f"{ANALYSIS_DIR}/baypass/figures/baypass_c2_manhattan.pdf",
+        c2_manhat_png = f"{ANALYSIS_DIR}/baypass/figures/baypass_c2_manhattan.png"
+    params:
+        qval_cut = 0.05
+    conda: "../envs/baypass.yaml"
+    notebook:
+        "../notebooks/baypass_outlier_test.r.ipynb"
 
 ##############
 #### POST ####
