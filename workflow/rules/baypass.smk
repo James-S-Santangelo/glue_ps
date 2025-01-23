@@ -137,6 +137,24 @@ rule baypass_coreModel_byCity:
             -nthreads {threads} &> {log}
         """
 
+#############
+#### WZA ####
+#############
+
+rule create_wza_input_files:
+    input:
+        urban_mafs = lambda w: expand(rules.angsd_alleleCounts_byCity_byHabitat.output.mafs, chrom=CHROMOSOMES, habitat="urban", city=w.city),
+        rural_mafs = lambda w: expand(rules.angsd_alleleCounts_byCity_byHabitat.output.mafs, chrom=CHROMOSOMES, habitat="rural", city=w.city),
+        cont_out = lambda w: expand(rules.baypass_coreModel_byCity.output.cont_out, n=BAYPASS_SPLITS, city=w.city, k=[42]),
+        site_order = expand(rules.split_baypass_global_input_files.output.site_order, n=BAYPASS_SPLITS)
+    output:
+        wza_input = f"{PROGRAM_RESOURCE_DIR}/wza/{{city}}_wza_input.txt"
+    conda: "../envs/r.yaml"
+    params:
+        win_size = 10000
+    notebook:
+        "../notebooks/create_wza_input_files.r.ipynb"
+
 ##################
 #### ANALYSES ####
 ##################
@@ -179,6 +197,7 @@ rule baypass_done:
         # expand(rules.generate_windowed_c2_byCity.output, city=CITIES),
         # rules.fmd_and_omega_mat_pca.output,
         # rules.baypass_outlier_test.output,
+        expand(rules.create_wza_input_files.output, city=CITIES),
         expand(rules.baypass_coreModel_byCity.output, city=CITIES, n=BAYPASS_SPLITS, k=[42]),
     output:
         f"{BAYPASS_DIR}/baypass.done"
