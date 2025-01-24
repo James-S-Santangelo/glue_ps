@@ -151,7 +151,7 @@ rule create_wza_input_files:
         wza_input = f"{PROGRAM_RESOURCE_DIR}/wza/{{city}}_wza_input.txt"
     conda: "../envs/r.yaml"
     params:
-        win_size = 10000
+        win_size = 20000
     notebook:
         "../notebooks/create_wza_input_files.r.ipynb"
 

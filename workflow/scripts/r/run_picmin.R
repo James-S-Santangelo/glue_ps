@@ -25,13 +25,13 @@ if (snakemake@wildcards[["stat"]] == "fst") {
    all_cities <- read_csv(snakemake@input[["stats"]]) %>%
        dplyr::select(city, winID, abs_delta_tp_ur) %>%
        group_by(city) %>%
-       mutate(emp = PicMin:::EmpiricalPs(abs_delta_tp_ur, large_i_small_p = TRUE)) %>%
+       mutate(emp = PicMin:::EmpiricalPs(scale(delta_tp_ur), large_i_small_p = TRUE)) %>%
        dplyr::select(city, winID, emp)
 } else {
     all_cities <- read_csv(snakemake@input[["stats"]]) %>%
        dplyr::select(city, winID, abs_delta_td_ur) %>%
         group_by(city) %>%
-        mutate(emp = PicMin:::EmpiricalPs(abs_delta_td_ur, large_i_small_p = TRUE)) %>%
+        mutate(emp = PicMin:::EmpiricalPs(scale(delta_td_ur), large_i_small_p = TRUE)) %>%
         dplyr::select(city, winID, emp)
 }
 
@@ -162,7 +162,7 @@ manhat_plot <- not_outliers %>%
     ) +
     scale_x_continuous(label = axis_set$chrom, breaks = axis_set$center) +
     scale_y_continuous(expand = c(0, 0)) +
-    coord_cartesian(ylim = c(0, 2)) +
+    # coord_cartesian(ylim = c(0, 2)) +
     labs(color = "# Cities with evidence of selection",
          fill = "# Cities with evidence of selection") +
     ylab(expression(-log[10] * "(q-value)")) + xlab("") +

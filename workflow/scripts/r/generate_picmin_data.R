@@ -28,9 +28,7 @@ all_windowed_stats <- all_windowed_thetas_wide %>%
     left_join(., all_windowed_fst, by = c("Chr", "start", "end", "WinCenter", "city")) %>%
     mutate(winID = paste0(Chr, ":", WinCenter),
            delta_tp_ur = tp_scaled_urban - tp_scaled_rural,
-           delta_td_ur = Tajima_urban - Tajima_rural,
-           abs_delta_tp_ur = abs(delta_tp_ur),
-           abs_delta_td_ur = abs(delta_td_ur))
+           delta_td_ur = Tajima_urban - Tajima_rural)
 
 write_csv(all_windowed_stats, snakemake@output[["stats"]])
 
@@ -42,8 +40,8 @@ write_csv(all_windowed_stats, snakemake@output[["stats"]])
 all_cities_df <- all_windowed_stats %>%
     group_by(city) %>%
     mutate(emp_fst = PicMin:::EmpiricalPs(fst, large_i_small_p = TRUE),
-           emp_tp = PicMin:::EmpiricalPs(abs_delta_tp_ur, large_i_small_p = TRUE),
-           emp_td = PicMin:::EmpiricalPs(abs_delta_td_ur, large_i_small_p = TRUE)) %>%
+           emp_tp = PicMin:::EmpiricalPs(scale(delta_tp_ur), large_i_small_p = TRUE),
+           emp_td = PicMin:::EmpiricalPs(scale(delta_td_ur), large_i_small_p = TRUE)) %>%
     dplyr::select(city, winID, emp_fst, emp_tp, emp_td)
 
 all_cities_wide <- all_cities_df %>%

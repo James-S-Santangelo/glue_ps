@@ -240,8 +240,8 @@ rule windowed_theta:
     container: 'library://james-s-santangelo/angsd/angsd:0.938'
     params:
         out = f"{ANGSD_DIR}/summary_stats/thetas/allSites/{{city}}/{{chrom}}/{{city}}_{{chrom}}_allSites_{{habitat}}_windowedThetas.gz",
-        win = 10000,
-        step = 10000
+        win = 20000,
+        step = 20000
     resources:
         mem_mb = lambda wildcards, attempt: attempt * 4000,
         runtime = 60
@@ -258,8 +258,8 @@ rule windowed_fst:
     log: LOG_DIR + '/windowed_fst/{city}_{chrom}_{hab_comb}_windowedFst.log'
     container: 'library://james-s-santangelo/angsd/angsd:0.938'
     params:
-        win = 10000,
-        step = 10000
+        win = 20000,
+        step = 20000
     resources:
         mem_mb = lambda wildcards, attempt: attempt * 4000,
         runtime = 60
