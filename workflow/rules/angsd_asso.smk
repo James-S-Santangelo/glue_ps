@@ -466,7 +466,6 @@ rule angsd_asso_score:
             -doAsso 2 \
             -Pvalue 1 \
             -yBin {input.ybin} \
-            -cov {input.cov_file} \
             -doPost 1 \
             -r {wildcards.chrom} \
             -sites {input.sites} \
