@@ -34,6 +34,7 @@ NGSPARALOG_DIR = f"{config['results_prefix']}/ngsparalog"
 NGSLD_DIR = f"{config['results_prefix']}/ngsld"
 PCANGSD_DIR = f"{config['results_prefix']}/pcangsd"
 BAYPASS_DIR = f"{config['results_prefix']}/baypass"
+GEMMA_DIR = f"{config['results_prefix']}/gemma"
 ANALYSIS_DIR = f"{config['results_prefix']}/analyses"
 
 BAYPASS_SPLITS = [x for x in range(20)]
@@ -61,10 +62,12 @@ rule all:
         f'{ANGSD_DIR}/angsd_fsts_thetas_byCity.done',
         f'{ANGSD_DIR}/angsd_asso.done',
         f'{BAYPASS_DIR}/baypass.done',
+        f'{GEMMA_DIR}/gemma.done',
         f"{ANALYSIS_DIR}/picmin/picmin.done"
 
 include: 'rules/ref.smk'
 include: 'rules/angsd_fst_thetas_byCity.smk'
 include: 'rules/angsd_asso.smk'
 include: 'rules/baypass.smk'
+include: 'rules/gemma.smk'
 include: 'rules/picmin.smk'
