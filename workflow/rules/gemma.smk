@@ -71,7 +71,7 @@ rule plink_generate_bed:
         map = rules.plink_tped_to_ped.output.map
     output:
         bim = f"{PROGRAM_RESOURCE_DIR}/plink/{{chrom}}_allSamples.bim",
-        fam = f"{PROGRAM_RESOURCE_DIR}/plink/{{chrom}}_allSamples.fam",
+        fam = f"{PROGRAM_RESOURCE_DIR}/plink/{{chrom}}_allSamples_noID_noPheno.fam",
         bed = f"{PROGRAM_RESOURCE_DIR}/plink/{{chrom}}_allSamples.bed"
     log: f"{LOG_DIR}/plink/generate_bed/{{chrom}}.log"
     conda: "../envs/gemma.yaml"
@@ -83,8 +83,11 @@ rule plink_generate_bed:
             --ped {input.ped} \
             --map {input.map} \
             --out {params.out} \
-            --make-bed &> {log}
+            --make-bed &> {log} &&
+
+        mv {params.out}.fam {output.fam}
         """
+
 
 rule gemma_done:
     input:
