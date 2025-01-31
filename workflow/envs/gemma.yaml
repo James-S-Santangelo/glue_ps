@@ -1,0 +1,6 @@
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - plink=1.90b6.21
+  - gemma=0.98.3

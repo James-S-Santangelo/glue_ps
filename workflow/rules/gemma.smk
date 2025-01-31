@@ -44,9 +44,51 @@ rule angsd_geno_plink:
             -bam {input.bams} 2> {log}
         """
 
+rule plink_tped_to_ped:
+    input:
+        tped = rules.angsd_geno_plink.output.tped,
+        tfam = rules.angsd_geno_plink.output.tfam
+    output:
+        ped = f"{PROGRAM_RESOURCE_DIR}/plink/{{chrom}}_allSamples.ped",
+        nosex = f"{PROGRAM_RESOURCE_DIR}/plink/{{chrom}}_allSamples.nosex",
+        map = f"{PROGRAM_RESOURCE_DIR}/plink/{{chrom}}_allSamples.map"
+    log: f"{LOG_DIR}/plink/tped_to_ped/{{chrom}}.log"
+    conda: "../envs/gemma.yaml"
+    params:
+        out= f"{PROGRAM_RESOURCE_DIR}/plink/{{chrom}}_allSamples",
+    shell:
+        """
+        plink --allow-extra-chr \
+            --tfam {input.tfam} \
+            --tped {input.tped} \
+            --out {params.out} \
+            --recode &> {log}
+        """
+
+rule plink_generate_bed:
+    input:
+        ped = rules.plink_tped_to_ped.output.ped,
+        map = rules.plink_tped_to_ped.output.map
+    output:
+        bim = f"{PROGRAM_RESOURCE_DIR}/plink/{{chrom}}_allSamples.bim",
+        fam = f"{PROGRAM_RESOURCE_DIR}/plink/{{chrom}}_allSamples.fam",
+        bed = f"{PROGRAM_RESOURCE_DIR}/plink/{{chrom}}_allSamples.bed"
+    log: f"{LOG_DIR}/plink/generate_bed/{{chrom}}.log"
+    conda: "../envs/gemma.yaml"
+    params:
+        out= f"{PROGRAM_RESOURCE_DIR}/plink/{{chrom}}_allSamples",
+    shell:
+        """
+        plink --allow-extra-chr \
+            --ped {input.ped} \
+            --map {input.map} \
+            --out {params.out} \
+            --make-bed &> {log}
+        """
+
 rule gemma_done:
     input:
-        expand(rules.angsd_geno_plink.output, chrom=CHROMOSOMES)
+        expand(rules.plink_generate_bed.output, chrom=CHROMOSOMES)
     output:
         f"{GEMMA_DIR}/gemma.done"
     shell:
