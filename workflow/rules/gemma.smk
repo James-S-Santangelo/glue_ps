@@ -187,11 +187,33 @@ rule gemma_estimate_relatedness_matrix:
             -miss 1.0 \
             -notsnp 2> {log}
         """
-    
+
+rule gemma_ulmm:
+    input:
+        mat = rules.gemma_estimate_relatedness_matrix.output,
+        plink = rules.add_indID_and_phenotypes.output,
+    output:
+        f"{GEMMA_DIR}/{{chrom}}.assoc.txt"
+    log: f"{LOG_DIR}/gemma/{{chrom}}_ulmm.log"
+    conda: "../envs/gemma.yaml"
+    params:
+        outdir = GEMMA_DIR,
+        prefix = "{chrom}",
+        bfile = f"{PROGRAM_RESOURCE_DIR}/plink/{{chrom}}_allSamples"
+    shell:
+        """
+        gemma -bfile {params.bfile} \
+            -outdir {params.outdir} \
+            -o {params.prefix} \
+            -k {input.mat} \
+            -lmm 4 \
+            -miss 1.0 \
+            -notsnp 2> {log}
+        """
         
 rule gemma_done:
     input:
-        rules.gemma_estimate_relatedness_matrix.output
+        expand(rules.gemma_ulmm.output, chrom=CHROMOSOMES)
     output:
         f"{GEMMA_DIR}/gemma.done"
     shell:
