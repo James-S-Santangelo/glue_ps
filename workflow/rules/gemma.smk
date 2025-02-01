@@ -98,9 +98,78 @@ rule add_indID_and_phenotypes:
     script:
         "../scripts/r/add_indID_and_phenotypes.R"
 
+rule get_random_pruned_sites_from_plink_files:
+    input:
+        pos = rules.prune_graph.output.pos,
+        tped = rules.angsd_geno_plink.output.tped,
+        tfam = expand(rules.add_indID_and_phenotypes.output.fam, chrom="Chr01_Occ")
+    output:
+        tped = f"{PROGRAM_RESOURCE_DIR}/plink/random/{{chrom}}_random_pruned.tped",
+        tfam = f"{PROGRAM_RESOURCE_DIR}/plink/random/{{chrom}}_random_pruned.tfam"
+    conda: "../envs/r.yaml"
+    params:
+        nsites = 6250
+    script:
+        "../scripts/r/get_random_pruned_sites_from_plink_files.R"
+
+rule concat_random_tped_files:
+    input:
+        tped = expand(rules.get_random_pruned_sites_from_plink_files.output.tped, chrom=CHROMOSOMES),
+        tfam = expand(rules.get_random_pruned_sites_from_plink_files.output.tfam, chrom="Chr01_Occ")
+    output:
+        tped = f"{PROGRAM_RESOURCE_DIR}/plink/random/allChroms_random_pruned.tped",
+        tfam = f"{PROGRAM_RESOURCE_DIR}/plink/random/allChroms_random_pruned.tfam"
+    shell:
+        """
+        cat {input.tped} > {output.tped}
+        mv {input.tfam} {output.tfam}
+        """
+
+rule plink_random_tped_to_ped:
+    input:
+        tped = rules.concat_random_tped_files.output.tped,
+        tfam = rules.concat_random_tped_files.output.tfam
+    output:
+        ped = f"{PROGRAM_RESOURCE_DIR}/plink/random/allChroms_allSamples.ped",
+        nosex = f"{PROGRAM_RESOURCE_DIR}/plink/random/allChroms_allSamples.nosex",
+        map = f"{PROGRAM_RESOURCE_DIR}/plink/random/allChroms_allSamples.map"
+    log: f"{LOG_DIR}/plink/tped_to_ped/allChroms_random.log"
+    conda: "../envs/gemma.yaml"
+    params:
+        out= f"{PROGRAM_RESOURCE_DIR}/plink/random/allChroms_allSamples",
+    shell:
+        """
+        plink --allow-extra-chr \
+            --tfam {input.tfam} \
+            --tped {input.tped} \
+            --out {params.out} \
+            --recode &> {log}
+        """
+
+rule plink_random_generate_bed:
+    input:
+        ped = rules.plink_random_tped_to_ped.output.ped,
+        map = rules.plink_random_tped_to_ped.output.map
+    output:
+        bim = f"{PROGRAM_RESOURCE_DIR}/plink/random/allChroms_allSamples.bim",
+        fam = f"{PROGRAM_RESOURCE_DIR}/plink/random/allChroms_allSamples.fam",
+        bed = f"{PROGRAM_RESOURCE_DIR}/plink/random/allChroms_allSamples.bed"
+    log: f"{LOG_DIR}/plink/generate_bed/allChroms_random.log"
+    conda: "../envs/gemma.yaml"
+    params:
+        out= f"{PROGRAM_RESOURCE_DIR}/plink/random/allChroms_allSamples",
+    shell:
+        """
+        plink --allow-extra-chr \
+            --ped {input.ped} \
+            --map {input.map} \
+            --out {params.out} \
+            --make-bed &> {log}
+        """
+        
 rule gemma_done:
     input:
-        expand(rules.add_indID_and_phenotypes.output, chrom=CHROMOSOMES)
+        rules.plink_random_generate_bed.output
     output:
         f"{GEMMA_DIR}/gemma.done"
     shell:
