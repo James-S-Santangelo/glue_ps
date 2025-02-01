@@ -166,10 +166,32 @@ rule plink_random_generate_bed:
             --out {params.out} \
             --make-bed &> {log}
         """
+
+rule gemma_estimate_relatedness_matrix:
+    input:
+        rules.plink_random_generate_bed.output
+    output:
+        f"{GEMMA_DIR}/relatedness_matrix_random100K.cXX.txt"
+    log: f"{LOG_DIR}/gemma/relatedness_matrix.log"
+    conda: "../envs/gemma.yaml"
+    params:
+        outdir = GEMMA_DIR,
+        prefix = "relatedness_matrix_random100K",
+        bfile = f"{PROGRAM_RESOURCE_DIR}/plink/random/allChroms_allSamples"
+    shell:
+        """
+        gemma -bfile {params.bfile} \
+            -outdir {params.outdir} \
+            -o {params.prefix} \
+            -gk 1 \
+            -miss 1.0 \
+            -notsnp 2> {log}
+        """
+    
         
 rule gemma_done:
     input:
-        rules.plink_random_generate_bed.output
+        rules.gemma_estimate_relatedness_matrix.output
     output:
         f"{GEMMA_DIR}/gemma.done"
     shell:
