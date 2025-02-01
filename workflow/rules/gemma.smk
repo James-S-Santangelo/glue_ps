@@ -88,10 +88,19 @@ rule plink_generate_bed:
         mv {params.out}.fam {output.fam}
         """
 
+rule add_indID_and_phenotypes:
+    input:
+        fam = rules.plink_generate_bed.output.fam,
+        ybin = rules.create_angsd_asso_ybin_file.output
+    output:
+        fam = f"{PROGRAM_RESOURCE_DIR}/plink/{{chrom}}_allSamples.fam",
+    conda: "../envs/r.yaml"
+    script:
+        "../scripts/r/add_indID_and_phenotypes.R"
 
 rule gemma_done:
     input:
-        expand(rules.plink_generate_bed.output, chrom=CHROMOSOMES)
+        expand(rules.add_indID_and_phenotypes.output, chrom=CHROMOSOMES)
     output:
         f"{GEMMA_DIR}/gemma.done"
     shell:
