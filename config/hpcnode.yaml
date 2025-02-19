@@ -1,6 +1,7 @@
 # Inputs
 samples: ../resources/glue_ps_sampleSheet.txt
 chromosomes: ../resources/chromosome_file.txt
+high_cov_vcf: ../resources/Chr01_Occ_allFinalSamples.vcf.gz
 ref: /research/references/trifolium/repens/UTM_Trep_v1.0/UTM_Trep_v1.0_haploid_reference_softMasked.fasta
 bams: /node1nfs/archive/projects/trifolium/GLUE/dnaSeqQC_v2/results/bam 
 

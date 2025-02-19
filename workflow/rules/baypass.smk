@@ -54,7 +54,7 @@ rule create_alleleCount_files_byCity:
         perCity_pool = expand(f"{PROGRAM_RESOURCE_DIR}/baypass/allSites/{{city}}/{{city}}.poolsize", city=CITIES),
         site_order = f"{PROGRAM_RESOURCE_DIR}/baypass/allSites/site_order.txt",
         miss = f"{PROGRAM_RESOURCE_DIR}/baypass/allSites/missing.sites"
-    conda: "../envs/baypass.yaml"
+    conda: "../envs/python.yaml"
     resources:
         mem_mb = lambda wildcards, attempt: attempt * 40000,
         runtime = lambda wildcards, attempt: attempt * 60 
@@ -92,7 +92,7 @@ rule split_baypass_global_input_files:
         as_geno = expand(f"{PROGRAM_RESOURCE_DIR}/baypass/split_files/allSamples/splits/allSamples_{{n}}.geno", n=BAYPASS_SPLITS),
         site_order = expand(f"{PROGRAM_RESOURCE_DIR}/baypass/split_files/allSamples/site_order/site_order_{{n}}.txt", n=BAYPASS_SPLITS),
         perCity_geno = expand(f"{PROGRAM_RESOURCE_DIR}/baypass/split_files/byCity/{{city}}/{{city}}_{{n}}.geno", city=CITIES, n=BAYPASS_SPLITS)
-    conda: "../envs/baypass.yaml"
+    conda: "../envs/python.yaml"
     params:
         out_prefix = f"{PROGRAM_RESOURCE_DIR}/baypass/split_files",
         in_prefix = f"{PROGRAM_RESOURCE_DIR}/baypass/allSites",
@@ -161,7 +161,7 @@ rule run_wza:
     output:
         f"{BAYPASS_DIR}/wza_byCity/{{city}}_wza.txt"
     log: f"{LOG_DIR}/wza/{{city}}_wza.log"
-    conda: "../envs/baypass.yaml"
+    conda: "../envs/python.yaml"
     shell:
         """
         python3 scripts/python/general_WZA_script.py \
@@ -183,7 +183,7 @@ rule run_wza:
 #         omega_mat = rules.baypass_coreModel_random100K.output.omega_mat
 #     output:
 #         pca = f"{ANALYSIS_DIR}/baypass/figures/pca_by_continent_and_habitat.pdf",
-#     conda: "../envs/baypass.yaml"
+#     conda: "../envs/r.yaml"
 #     params:
 #         cities = CITIES,
 #         habitats = HABITATS,
@@ -203,7 +203,7 @@ rule baypass_outlier_test:
         c2_manhat_png = f"{ANALYSIS_DIR}/baypass/figures/baypass_c2_manhattan.png"
     params:
         qval_cut = 0.05
-    conda: "../envs/baypass.yaml"
+    conda: "../envs/r.yaml"
     notebook:
         "../notebooks/baypass_outlier_test.r.ipynb"
 

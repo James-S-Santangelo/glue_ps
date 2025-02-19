@@ -1,6 +1,7 @@
 rerun-incomplete: True
 printshellcmds: True
 keep-going: True
-conda-frontend: mamba
+notemp: True
+conda-frontend: conda
 conda-cleanup-pkgs: cache
-singularity-args: "--bind /home --bind /research"
+singularity-args: "--bind /home --bind /research --bind /node1nfs"
