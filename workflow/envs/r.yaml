@@ -9,4 +9,6 @@ dependencies:
   - r-irkernel
   - r-factominer
   - r-factoextra
+  - r-vcfR
+  - bioconductor-qvalue
   - jupyter

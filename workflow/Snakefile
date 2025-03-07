@@ -39,6 +39,7 @@ NGSLD_DIR = f"{config['results_prefix']}/ngsld"
 PCANGSD_DIR = f"{config['results_prefix']}/pcangsd"
 BAYPASS_DIR = f"{config['results_prefix']}/baypass"
 GEMMA_DIR = f"{config['results_prefix']}/gemma"
+AFVAPER_DIR = f"{config['results_prefix']}/afvaper"
 STITCH_DIR = f"{config['results_prefix']}/stitch"
 ANALYSIS_DIR = f"{config['results_prefix']}/analyses"
 
@@ -68,6 +69,7 @@ rule all:
         f'{ANGSD_DIR}/angsd_asso.done',
         f'{BAYPASS_DIR}/baypass.done',
         f'{GEMMA_DIR}/gemma.done',
+        f'{AFVAPER_DIR}/afvaper.done',
         f'{STITCH_DIR}/stitch.done',
         f"{ANALYSIS_DIR}/picmin/picmin.done"
 
@@ -76,5 +78,6 @@ include: 'rules/angsd_fst_thetas_byCity.smk'
 include: 'rules/angsd_asso.smk'
 include: 'rules/baypass.smk'
 include: 'rules/gemma.smk'
+include: 'rules/afvaper.smk'
 include: 'rules/stitch.smk'
 include: 'rules/picmin.smk'
